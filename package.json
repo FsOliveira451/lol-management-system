@@ -6,14 +6,16 @@
     "scripts": {
     "dev": "tsx src/core/primeiro-teste.ts",
     "typecheck": "tsc --noEmit",
-    "db:teste": "tsx src/database/teste-banco.ts"
+    "db:teste": "tsx src/database/teste-banco.ts",
+    "test": "vitest run"
   },
   "license": "UNLICENSED",
   "devDependencies": {
     "@types/better-sqlite3": "^9.6.0",
     "@types/node": "^26.6.4",
     "tsx": "^4.23.15",
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.3"
   },
   "dependencies": {
     "better-sqlite3": "^13.0.3"
