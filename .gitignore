@@ -1,0 +1,28 @@
+# Dependências (pasta enorme, recriada com npm install)
+node_modules/
+
+# Resultados de build (gerados automaticamente)
+dist/
+out/
+release/
+
+# DADOS: nunca enviar o banco de dados nem backups
+data/
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+backups/
+
+# SEGREDOS: senhas e chaves de API
+.env
+.env.*
+
+# Logs
+*.log
+logs/
+
+# Arquivos do sistema e do editor
+Thumbs.db
+.DS_Store
+.vscode/
