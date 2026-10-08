@@ -8,6 +8,7 @@ import type {
   Posicao,
   StatusJogador,
 } from "../core/jogadores/tipos";
+import { registrarHistorico, type CampoHistorico } from "./historico-repositorio";
 
 // Como a linha do banco chega (nomes com underline, 0/1 no lugar de true/false)
 interface LinhaJogador {
@@ -34,6 +35,46 @@ export interface FiltrosJogadores {
   elo?: Elo;
   busca?: string;
   incluirInativos?: boolean;
+}
+
+// Informacoes extras de uma alteracao: por que e quem fez
+export interface OpcoesAlteracao {
+  motivo?: string;
+  responsavel?: string;
+}
+
+// Campos cujas mudancas ficam registradas no historico
+const CAMPOS_RASTREADOS = [
+  { chave: "eloAtual", coluna: "elo_atual" },
+  { chave: "eloMaximo", coluna: "elo_maximo" },
+  { chave: "posicaoPrincipal", coluna: "posicao_principal" },
+  { chave: "posicaoSecundaria", coluna: "posicao_secundaria" },
+  { chave: "status", coluna: "status" },
+] as const;
+
+interface MudancaRastreada {
+  campo: CampoHistorico;
+  valorAnterior: string | null;
+  valorNovo: string | null;
+}
+
+// Compara o jogador atual com os dados enviados e lista o que REALMENTE mudou
+function detectarMudancas(
+  atual: Jogador,
+  dados: DadosJogador,
+): MudancaRastreada[] {
+  const mudancas: MudancaRastreada[] = [];
+
+  for (const { chave, coluna } of CAMPOS_RASTREADOS) {
+    const novo = dados[chave];
+    if (novo === undefined) continue; // campo nao enviado
+    const anterior = atual[chave];
+    if (novo !== anterior) {
+      mudancas.push({ campo: coluna, valorAnterior: anterior, valorNovo: novo });
+    }
+  }
+
+  return mudancas;
 }
 
 // Traduz o formato do banco para o formato do sistema
@@ -88,6 +129,7 @@ export function buscarJogadorPorId(
 export function criarJogador(
   banco: Database.Database,
   dados: DadosJogador,
+  opcoes: OpcoesAlteracao = {},
 ): Jogador {
   const erros = validarDadosJogador(dados, "criar");
   if (erros.length > 0) {
@@ -99,34 +141,55 @@ export function criarJogador(
     throw new ErroValidacao(["Já existe um jogador com este Riot ID."]);
   }
 
-  const resultado = banco
-    .prepare(
-      `INSERT INTO jogadores (
-         apelido, riot_id, elo_atual, elo_maximo,
-         posicao_principal, posicao_secundaria, experiencia_competitiva,
-         comunicacao, lideranca, comprometimento, status, observacoes
-       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    )
-    .run(
-      (dados.apelido ?? "").trim(),
-      riotId,
-      dados.eloAtual ?? "Desconhecido",
-      dados.eloMaximo ?? null,
-      dados.posicaoPrincipal ?? null,
-      dados.posicaoSecundaria ?? null,
-      dados.experienciaCompetitiva ? 1 : 0,
-      dados.comunicacao ?? null,
-      dados.lideranca ?? null,
-      dados.comprometimento ?? null,
-      dados.status ?? "em_avaliacao",
-      dados.observacoes ?? null,
-    );
+  // TRANSACAO: o jogador e o seu historico inicial sao gravados juntos.
+  // Se qualquer passo falhar, nada fica gravado pela metade.
+  const gravar = banco.transaction((): Jogador => {
+    const resultado = banco
+      .prepare(
+        `INSERT INTO jogadores (
+           apelido, riot_id, elo_atual, elo_maximo,
+           posicao_principal, posicao_secundaria, experiencia_competitiva,
+           comunicacao, lideranca, comprometimento, status, observacoes
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      )
+      .run(
+        (dados.apelido ?? "").trim(),
+        riotId,
+        dados.eloAtual ?? "Desconhecido",
+        dados.eloMaximo ?? null,
+        dados.posicaoPrincipal ?? null,
+        dados.posicaoSecundaria ?? null,
+        dados.experienciaCompetitiva ? 1 : 0,
+        dados.comunicacao ?? null,
+        dados.lideranca ?? null,
+        dados.comprometimento ?? null,
+        dados.status ?? "em_avaliacao",
+        dados.observacoes ?? null,
+      );
 
-  const criado = buscarJogadorPorId(banco, Number(resultado.lastInsertRowid));
-  if (criado === null) {
-    throw new Error("Falha ao ler o jogador recém-criado.");
-  }
-  return criado;
+    const criado = buscarJogadorPorId(banco, Number(resultado.lastInsertRowid));
+    if (criado === null) {
+      throw new Error("Falha ao ler o jogador recém-criado.");
+    }
+
+    for (const { chave, coluna } of CAMPOS_RASTREADOS) {
+      const valor = criado[chave];
+      if (valor !== null) {
+        registrarHistorico(banco, {
+          jogadorId: criado.id,
+          campo: coluna,
+          valorAnterior: null,
+          valorNovo: valor,
+          motivo: "Cadastro inicial",
+          responsavel: opcoes.responsavel,
+        });
+      }
+    }
+
+    return criado;
+  });
+
+  return gravar();
 }
 
 export function listarJogadores(
@@ -190,6 +253,7 @@ export function editarJogador(
   banco: Database.Database,
   id: number,
   dados: DadosJogador,
+  opcoes: OpcoesAlteracao = {},
 ): Jogador {
   const atual = buscarJogadorPorId(banco, id);
   if (atual === null) {
@@ -207,6 +271,13 @@ export function editarJogador(
   const erros = validarDadosJogador(combinado, "editar");
   if (erros.length > 0) {
     throw new ErroValidacao(erros);
+  }
+
+  // Regra do projeto: nao alterar o status sem motivo
+  const mudancas = detectarMudancas(atual, dados);
+  const mudouStatus = mudancas.some((m) => m.campo === "status");
+  if (mudouStatus && !opcoes.motivo?.trim()) {
+    throw new ErroValidacao(["Informe o motivo da mudança de status."]);
   }
 
   const alteracoes: string[] = [];
@@ -239,13 +310,28 @@ export function editarJogador(
     return atual; // nada a alterar
   }
 
-  banco
-    .prepare(
-      `UPDATE jogadores
-       SET ${alteracoes.join(", ")}, atualizado_em = datetime('now')
-       WHERE id = ?`,
-    )
-    .run(...valores, id);
+  // TRANSACAO: a alteracao e o seu registro no historico andam juntos
+  const gravar = banco.transaction(() => {
+    banco
+      .prepare(
+        `UPDATE jogadores
+         SET ${alteracoes.join(", ")}, atualizado_em = datetime('now')
+         WHERE id = ?`,
+      )
+      .run(...valores, id);
+
+    for (const mudanca of mudancas) {
+      registrarHistorico(banco, {
+        jogadorId: id,
+        campo: mudanca.campo,
+        valorAnterior: mudanca.valorAnterior,
+        valorNovo: mudanca.valorNovo,
+        motivo: opcoes.motivo?.trim() || null,
+        responsavel: opcoes.responsavel,
+      });
+    }
+  });
+  gravar();
 
   const editado = buscarJogadorPorId(banco, id);
   if (editado === null) {
@@ -255,6 +341,12 @@ export function editarJogador(
 }
 
 // "Remover" = marcar como inativo. O registro e o historico continuam existindo.
-export function inativarJogador(banco: Database.Database, id: number): Jogador {
-  return editarJogador(banco, id, { status: "inativo" });
+// Agora o motivo e OBRIGATORIO (e uma mudanca de status).
+export function inativarJogador(
+  banco: Database.Database,
+  id: number,
+  motivo: string,
+  responsavel?: string,
+): Jogador {
+  return editarJogador(banco, id, { status: "inativo" }, { motivo, responsavel });
 }

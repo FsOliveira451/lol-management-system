@@ -15,6 +15,7 @@ let banco: Database.Database;
 // Antes de CADA teste: cria um banco novo e vazio, so na memoria
 beforeEach(() => {
   banco = new Database(":memory:");
+  banco.pragma("foreign_keys = ON");
   criarTabelas(banco);
 });
 
@@ -113,13 +114,13 @@ describe("editarJogador", () => {
 describe("inativarJogador", () => {
   it("mantém o registro com status inativo", () => {
     const criado = criarJogador(banco, { apelido: "Joao" });
-    inativarJogador(banco, criado.id);
+        inativarJogador(banco, criado.id, "Saiu do projeto");
     expect(buscarJogadorPorId(banco, criado.id)?.status).toBe("inativo");
   });
 
   it("some da listagem padrão e aparece com incluirInativos", () => {
     const criado = criarJogador(banco, { apelido: "Joao" });
-    inativarJogador(banco, criado.id);
+        inativarJogador(banco, criado.id, "Saiu do projeto");
     expect(listarJogadores(banco)).toHaveLength(0);
     expect(listarJogadores(banco, { incluirInativos: true })).toHaveLength(1);
   });

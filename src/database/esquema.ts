@@ -34,5 +34,21 @@ export function criarTabelas(banco: Database.Database): void {
       criado_em TEXT NOT NULL DEFAULT (datetime('now')),
       atualizado_em TEXT NOT NULL DEFAULT (datetime('now'))
     );
+
+    CREATE TABLE IF NOT EXISTS historico_jogador (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      jogador_id INTEGER NOT NULL REFERENCES jogadores(id),
+      campo TEXT NOT NULL
+        CHECK (campo IN ('elo_atual','elo_maximo','posicao_principal',
+                         'posicao_secundaria','status')),
+      valor_anterior TEXT,
+      valor_novo TEXT,
+      motivo TEXT,
+      responsavel TEXT,
+      registrado_em TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_historico_jogador
+      ON historico_jogador (jogador_id, campo);
   `);
 }
