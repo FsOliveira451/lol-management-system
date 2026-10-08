@@ -3,14 +3,19 @@
   "version": "0.1.0",
   "private": true,
   "description": "Software desktop de gestão competitiva de League of Legends",
-  "scripts": {
+    "scripts": {
     "dev": "tsx src/core/primeiro-teste.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "db:teste": "tsx src/database/teste-banco.ts"
   },
   "license": "UNLICENSED",
   "devDependencies": {
+    "@types/better-sqlite3": "^9.6.0",
     "@types/node": "^26.6.4",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2"
+  },
+  "dependencies": {
+    "better-sqlite3": "^13.0.3"
   }
 }
