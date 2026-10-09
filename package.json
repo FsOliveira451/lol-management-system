@@ -2,13 +2,16 @@
   "name": "lol-management-system",
   "version": "0.1.0",
   "private": true,
+    "main": "dist-electron/main.cjs",
   "description": "Software desktop de gestão competitiva de League of Legends",
     "scripts": {
     "dev": "tsx src/core/primeiro-teste.ts",
     "typecheck": "tsc --noEmit",
     "db:teste": "tsx src/database/teste-banco.ts",
     "test": "vitest run",
-    "ui": "vite"
+    "ui": "vite",
+    "build:main": "esbuild src/main/main.ts --bundle --platform=node --format=cjs --external:electron --outfile=dist-electron/main.cjs",
+    "electron": "npm run build:main && electron ."
   },
   "license": "UNLICENSED",
   "devDependencies": {
@@ -17,6 +20,8 @@
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.2",
+    "electron": "^44.7.0",
+    "esbuild": "^0.28.2",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2",
     "vite": "^8.3.4",

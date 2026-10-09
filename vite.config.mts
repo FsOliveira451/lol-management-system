@@ -5,5 +5,5 @@ export default defineConfig({
   // A interface vive em src/renderer
   root: "src/renderer",
   plugins: [react()],
-  server: { port: 5173, strictPort: true },
+  server: { host: "127.0.0.1", port: 5173, strictPort: true },
 });
