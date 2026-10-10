@@ -1,30 +1,22 @@
 import { useEffect, useState } from "react";
-import type { Jogador, StatusJogador } from "../core/jogadores/tipos";
+import type { Jogador } from "../core/jogadores/tipos";
 import { FormularioJogador } from "./FormularioJogador";
-
-// "Record<StatusJogador, string>" obriga a ter um texto para CADA status
-const ROTULO_STATUS: Record<StatusJogador, string> = {
-  ativo: "🟢 Ativo",
-  em_avaliacao: "🟡 Em avaliação",
-  titular: "🔵 Titular",
-  reserva: "🟣 Reserva",
-  academia: "🟠 Academia",
-  casual: "⚪ Casual",
-  inativo: "🔴 Inativo",
-  fora_do_projeto: "⚫ Fora do projeto",
-};
+import { PerfilJogador } from "./PerfilJogador";
+import { ROTULO_STATUS } from "./formatacao";
 
 export function PaginaJogadores() {
   // Estado: a "memoria" da tela
   const [busca, setBusca] = useState("");
-  const [versao, setVersao] = useState(0); // aumenta a cada clique em "Atualizar"
+  const [mostrarInativos, setMostrarInativos] = useState(false);
+  const [versao, setVersao] = useState(0); // aumenta para recarregar a lista
   const [jogadores, setJogadores] = useState<Jogador[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
-    const [formularioAberto, setFormularioAberto] = useState(false);
+  const [formularioAberto, setFormularioAberto] = useState(false);
+  const [jogadorAbertoId, setJogadorAbertoId] = useState<number | null>(null);
 
-  // Efeito: busca os dados no banco quando a tela aparece
-  // e SEMPRE que "busca" ou "versao" mudarem
+  // Busca os dados no banco quando a tela aparece
+  // e SEMPRE que busca, mostrarInativos ou versao mudarem
   useEffect(() => {
     if (window.api === undefined) {
       setErro(
@@ -38,7 +30,7 @@ export function PaginaJogadores() {
     setCarregando(true);
 
     window.api.jogadores
-      .listar({ busca })
+      .listar({ busca, incluirInativos: mostrarInativos })
       .then((resultado) => {
         if (cancelado) return;
         if (resultado.ok) {
@@ -55,11 +47,24 @@ export function PaginaJogadores() {
         if (!cancelado) setCarregando(false);
       });
 
-    // Limpeza: se a busca mudar antes da resposta chegar, ignora a resposta antiga
+    // Limpeza: se algo mudar antes da resposta chegar, ignora a resposta antiga
     return () => {
       cancelado = true;
     };
-  }, [busca, versao]);
+  }, [busca, mostrarInativos, versao]);
+
+  // Se um jogador foi aberto, mostra o perfil no lugar da lista
+  if (jogadorAbertoId !== null) {
+    return (
+      <PerfilJogador
+        jogadorId={jogadorAbertoId}
+        aoVoltar={() => {
+          setJogadorAbertoId(null);
+          setVersao((v) => v + 1); // o status pode ter mudado: recarrega a lista
+        }}
+      />
+    );
+  }
 
   return (
     <section>
@@ -78,7 +83,15 @@ export function PaginaJogadores() {
           value={busca}
           onChange={(evento) => setBusca(evento.target.value)}
         />
-                <button className="botao" onClick={() => setVersao((v) => v + 1)}>
+        <label className="campo-checkbox sem-margem">
+          <input
+            type="checkbox"
+            checked={mostrarInativos}
+            onChange={(evento) => setMostrarInativos(evento.target.checked)}
+          />
+          Mostrar inativos
+        </label>
+        <button className="botao" onClick={() => setVersao((v) => v + 1)}>
           Atualizar
         </button>
         <button
@@ -102,7 +115,11 @@ export function PaginaJogadores() {
         </thead>
         <tbody>
           {jogadores.map((jogador) => (
-            <tr key={jogador.id}>
+            <tr
+              key={jogador.id}
+              className="linha-clicavel"
+              onClick={() => setJogadorAbertoId(jogador.id)}
+            >
               <td>{jogador.apelido}</td>
               <td>{jogador.eloAtual === "Desconhecido" ? "N/D" : jogador.eloAtual}</td>
               <td>{jogador.posicaoPrincipal ?? "N/D"}</td>
@@ -117,7 +134,7 @@ export function PaginaJogadores() {
         </tbody>
       </table>
 
-            <p className="rodape-tabela">{jogadores.length} jogador(es)</p>
+      <p className="rodape-tabela">{jogadores.length} jogador(es)</p>
 
       {formularioAberto && (
         <FormularioJogador
