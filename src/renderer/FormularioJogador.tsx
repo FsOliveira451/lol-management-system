@@ -1,20 +1,33 @@
 import { useState, type FormEvent } from "react";
-import { ELOS, POSICOES, type Elo, type Posicao } from "../core/jogadores/tipos";
+import {
+  ELOS,
+  POSICOES,
+  type Elo,
+  type Jogador,
+  type Posicao,
+} from "../core/jogadores/tipos";
 import {
   FORMULARIO_VAZIO,
   converterFormulario,
+  valoresDoJogador,
   type ValoresFormulario,
 } from "./formulario-jogador";
 
 // Props: o que o "pai" entrega a este componente.
-// Sao FUNCOES: o formulario avisa o pai quando salvou ou foi cancelado.
+// Se vier um "jogador", o formulario funciona em modo EDICAO; senao, em modo CADASTRO.
 interface Props {
+  jogador?: Jogador;
   aoSalvar: () => void;
   aoCancelar: () => void;
 }
 
-export function FormularioJogador({ aoSalvar, aoCancelar }: Props) {
-  const [valores, setValores] = useState<ValoresFormulario>(FORMULARIO_VAZIO);
+export function FormularioJogador({ jogador, aoSalvar, aoCancelar }: Props) {
+  const editando = jogador !== undefined;
+
+  const [valores, setValores] = useState<ValoresFormulario>(
+    jogador !== undefined ? valoresDoJogador(jogador) : FORMULARIO_VAZIO,
+  );
+  const [motivo, setMotivo] = useState("");
   const [erros, setErros] = useState<string[]>([]);
   const [salvando, setSalvando] = useState(false);
 
@@ -32,7 +45,12 @@ export function FormularioJogador({ aoSalvar, aoCancelar }: Props) {
     setErros([]);
 
     try {
-      const resultado = await window.api.jogadores.criar(converterFormulario(valores));
+      const dados = converterFormulario(valores);
+      const resultado =
+        jogador !== undefined
+          ? await window.api.jogadores.editar(jogador.id, dados, { motivo })
+          : await window.api.jogadores.criar(dados);
+
       if (resultado.ok) {
         aoSalvar();
       } else {
@@ -48,7 +66,7 @@ export function FormularioJogador({ aoSalvar, aoCancelar }: Props) {
   return (
     <div className="fundo-modal">
       <form className="modal" onSubmit={enviar}>
-        <h3>Novo jogador</h3>
+        <h3>{editando ? "Editar jogador" : "Novo jogador"}</h3>
 
         <label className="campo">
           Apelido *
@@ -147,6 +165,24 @@ export function FormularioJogador({ aoSalvar, aoCancelar }: Props) {
           />
         </label>
 
+        {editando && (
+          <>
+            <label className="campo">
+              Motivo da alteração (opcional)
+              <textarea
+                rows={2}
+                placeholder="Ex.: Subiu para Platina na ranqueada"
+                value={motivo}
+                onChange={(e) => setMotivo(e.target.value)}
+              />
+            </label>
+            <p className="dica">
+              Mudanças de elo e de posição ficam registradas no histórico. O status é
+              alterado pelo botão &quot;Alterar status&quot; do perfil.
+            </p>
+          </>
+        )}
+
         {erros.length > 0 && (
           <ul className="lista-erros">
             {erros.map((erro) => (
@@ -160,7 +196,7 @@ export function FormularioJogador({ aoSalvar, aoCancelar }: Props) {
             Cancelar
           </button>
           <button type="submit" className="botao botao-principal" disabled={salvando}>
-            {salvando ? "Salvando..." : "Salvar jogador"}
+            {salvando ? "Salvando..." : editando ? "Salvar alterações" : "Salvar jogador"}
           </button>
         </div>
       </form>

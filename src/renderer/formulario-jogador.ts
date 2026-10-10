@@ -1,4 +1,4 @@
-import type { DadosJogador, Elo, Posicao } from "../core/jogadores/tipos";
+import type { DadosJogador, Elo, Jogador, Posicao } from "../core/jogadores/tipos";
 
 // O que o formulario guarda: tudo como texto (vazio = "")
 export interface ValoresFormulario {
@@ -40,5 +40,20 @@ export function converterFormulario(valores: ValoresFormulario): DadosJogador {
     posicaoSecundaria: valores.posicaoSecundaria === "" ? null : valores.posicaoSecundaria,
     experienciaCompetitiva: valores.experienciaCompetitiva,
     observacoes: textoOuNull(valores.observacoes),
+  };
+}
+
+
+// O caminho inverso: de um jogador ja cadastrado para os campos do formulario
+export function valoresDoJogador(jogador: Jogador): ValoresFormulario {
+  return {
+    apelido: jogador.apelido,
+    riotId: jogador.riotId ?? "",
+    eloAtual: jogador.eloAtual,
+    eloMaximo: jogador.eloMaximo ?? "",
+    posicaoPrincipal: jogador.posicaoPrincipal ?? "",
+    posicaoSecundaria: jogador.posicaoSecundaria ?? "",
+    experienciaCompetitiva: jogador.experienciaCompetitiva,
+    observacoes: jogador.observacoes ?? "",
   };
 }

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { Jogador } from "../core/jogadores/tipos";
 import type { EntradaHistorico } from "../database/historico-repositorio";
 import { AlterarStatus } from "./AlterarStatus";
+import { FormularioJogador } from "./FormularioJogador";
 import {
   ROTULO_CAMPO,
   ROTULO_STATUS,
@@ -21,6 +22,7 @@ export function PerfilJogador({ jogadorId, aoVoltar }: Props) {
   const [erro, setErro] = useState<string | null>(null);
   const [versao, setVersao] = useState(0);
   const [alterandoStatus, setAlterandoStatus] = useState(false);
+    const [editandoDados, setEditandoDados] = useState(false);
 
   useEffect(() => {
     let cancelado = false;
@@ -95,9 +97,14 @@ export function PerfilJogador({ jogadorId, aoVoltar }: Props) {
       <header className="perfil-cabecalho">
         <h2>{jogador.apelido}</h2>
         <span className="selo-status">{ROTULO_STATUS[jogador.status]}</span>
-        <button className="botao botao-principal" onClick={() => setAlterandoStatus(true)}>
-          Alterar status
-        </button>
+               <div className="acoes-perfil">
+          <button className="botao" onClick={() => setEditandoDados(true)}>
+            Editar dados
+          </button>
+          <button className="botao botao-principal" onClick={() => setAlterandoStatus(true)}>
+            Alterar status
+          </button>
+        </div>
       </header>
 
       {erro !== null && <p className="mensagem-erro">{erro}</p>}
@@ -150,6 +157,17 @@ export function PerfilJogador({ jogadorId, aoVoltar }: Props) {
           aoCancelar={() => setAlterandoStatus(false)}
           aoConcluir={() => {
             setAlterandoStatus(false);
+            setVersao((v) => v + 1); // recarrega perfil e historico
+          }}
+        />
+      )}
+
+            {editandoDados && (
+        <FormularioJogador
+          jogador={jogador}
+          aoCancelar={() => setEditandoDados(false)}
+          aoSalvar={() => {
+            setEditandoDados(false);
             setVersao((v) => v + 1); // recarrega perfil e historico
           }}
         />

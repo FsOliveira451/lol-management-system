@@ -355,3 +355,13 @@ body {
   font-size: 13px;
   color: var(--texto-suave);
 }
+
+.acoes-perfil {
+  margin-left: auto;
+  display: flex;
+  gap: 12px;
+}
+
+.acoes-perfil .botao {
+  margin-left: 0;
+}

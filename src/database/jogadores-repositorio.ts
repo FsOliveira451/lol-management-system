@@ -283,27 +283,29 @@ export function editarJogador(
   const alteracoes: string[] = [];
   const valores: (string | number | null)[] = [];
 
-  for (const chave of Object.keys(COLUNAS) as (keyof DadosJogador)[]) {
+    for (const chave of Object.keys(COLUNAS) as (keyof DadosJogador)[]) {
     const valor = dados[chave];
     if (valor === undefined) continue; // campo nao enviado: nao mexe
 
-    let valorBanco: string | number | null;
-    if (typeof valor === "boolean") {
-      valorBanco = valor ? 1 : 0;
-    } else if (typeof valor === "string") {
-      valorBanco = chave === "riotId" ? normalizarRiotId(valor) : valor.trim();
+    // Valor "limpo", no formato do sistema (para comparar com o que ja esta gravado)
+    let novo: string | number | boolean | null;
+    if (typeof valor === "string") {
+      novo = chave === "riotId" ? normalizarRiotId(valor) : valor.trim();
     } else {
-      valorBanco = valor;
+      novo = valor;
     }
 
-    if (typeof valorBanco === "string" && chave === "riotId") {
-      if (riotIdEmUso(banco, valorBanco, id)) {
+    // Nada mudou neste campo: nao precisa gravar
+    if (novo === atual[chave]) continue;
+
+    if (typeof novo === "string" && chave === "riotId") {
+      if (riotIdEmUso(banco, novo, id)) {
         throw new ErroValidacao(["Já existe um jogador com este Riot ID."]);
       }
     }
 
     alteracoes.push(`${COLUNAS[chave]} = ?`);
-    valores.push(valorBanco);
+    valores.push(typeof novo === "boolean" ? (novo ? 1 : 0) : novo);
   }
 
   if (alteracoes.length === 0) {
