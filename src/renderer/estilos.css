@@ -147,3 +147,101 @@ body {
   color: #ff8a80;
   margin: 12px 0;
 }
+
+.barra-ferramentas .botao-principal {
+  margin-left: auto;
+}
+
+.botao-principal {
+  background: var(--destaque);
+  color: #1a1405;
+  font-weight: 600;
+}
+
+.botao-principal:hover {
+  background: #d9b45a;
+}
+
+.botao:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.fundo-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 10;
+}
+
+.modal {
+  width: 100%;
+  max-width: 560px;
+  max-height: 100%;
+  overflow-y: auto;
+  background: var(--painel);
+  border: 1px solid var(--borda);
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.modal h3 {
+  margin: 0 0 16px;
+  color: var(--destaque);
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+  font-size: 13px;
+  color: var(--texto-suave);
+}
+
+.campo input,
+.campo select,
+.campo textarea {
+  padding: 10px 12px;
+  background: var(--fundo);
+  border: 1px solid var(--borda);
+  border-radius: 8px;
+  color: var(--texto);
+  font-size: 14px;
+  font-family: inherit;
+  color-scheme: dark;
+}
+
+.grade-campos {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 16px;
+}
+
+.campo-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+  font-size: 14px;
+}
+
+.lista-erros {
+  margin: 0 0 14px;
+  padding: 10px 14px 10px 30px;
+  background: rgba(255, 138, 128, 0.1);
+  border: 1px solid #ff8a80;
+  border-radius: 8px;
+  color: #ff8a80;
+  font-size: 14px;
+}
+
+.acoes-modal {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}

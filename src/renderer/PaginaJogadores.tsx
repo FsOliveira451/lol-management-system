@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import type { Jogador, StatusJogador } from "../core/jogadores/tipos";
+import { FormularioJogador } from "./FormularioJogador";
 
 // "Record<StatusJogador, string>" obriga a ter um texto para CADA status
 const ROTULO_STATUS: Record<StatusJogador, string> = {
@@ -20,6 +21,7 @@ export function PaginaJogadores() {
   const [jogadores, setJogadores] = useState<Jogador[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
+    const [formularioAberto, setFormularioAberto] = useState(false);
 
   // Efeito: busca os dados no banco quando a tela aparece
   // e SEMPRE que "busca" ou "versao" mudarem
@@ -76,8 +78,14 @@ export function PaginaJogadores() {
           value={busca}
           onChange={(evento) => setBusca(evento.target.value)}
         />
-        <button className="botao" onClick={() => setVersao((v) => v + 1)}>
+                <button className="botao" onClick={() => setVersao((v) => v + 1)}>
           Atualizar
+        </button>
+        <button
+          className="botao botao-principal"
+          onClick={() => setFormularioAberto(true)}
+        >
+          Novo jogador
         </button>
       </div>
 
@@ -109,7 +117,17 @@ export function PaginaJogadores() {
         </tbody>
       </table>
 
-      <p className="rodape-tabela">{jogadores.length} jogador(es)</p>
+            <p className="rodape-tabela">{jogadores.length} jogador(es)</p>
+
+      {formularioAberto && (
+        <FormularioJogador
+          aoCancelar={() => setFormularioAberto(false)}
+          aoSalvar={() => {
+            setFormularioAberto(false);
+            setVersao((v) => v + 1); // recarrega a tabela
+          }}
+        />
+      )}
     </section>
   );
 }
