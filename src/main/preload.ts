@@ -12,6 +12,12 @@ const api: ApiLol = {
       ipcRenderer.invoke(CANAIS.jogadoresEditar, id, dados, opcoes),
     historico: (id) => ipcRenderer.invoke(CANAIS.jogadoresHistorico, id),
   },
+  equipes: {
+    listar: (filtros) => ipcRenderer.invoke(CANAIS.equipesListar, filtros),
+    criar: (dados) => ipcRenderer.invoke(CANAIS.equipesCriar, dados),
+    buscar: (id) => ipcRenderer.invoke(CANAIS.equipesBuscar, id),
+    editar: (id, dados) => ipcRenderer.invoke(CANAIS.equipesEditar, id, dados),
+  },
 };
 
 // Expoe como "window.api" dentro da tela

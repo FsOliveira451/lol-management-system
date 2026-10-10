@@ -5,7 +5,7 @@ import { ErroValidacao } from "../core/erros";
 // Garante que o valor e um identificador valido (inteiro positivo)
 export function exigirId(valor: unknown): number {
   if (typeof valor !== "number" || !Number.isInteger(valor) || valor <= 0) {
-    throw new ErroValidacao(["Identificador de jogador inválido."]);
+       throw new ErroValidacao(["Identificador inválido."]);
   }
   return valor;
 }

@@ -69,7 +69,7 @@ export function PaginaJogadores() {
   return (
     <section>
       <header className="cabecalho-pagina">
-        <h2>Jogadores</h2>
+                <h2>Pessoas</h2>
         <span className="aviso">
           {carregando ? "Carregando..." : "Dados do banco de dados"}
         </span>

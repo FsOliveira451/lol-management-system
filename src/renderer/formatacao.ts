@@ -1,5 +1,6 @@
 import type { StatusJogador } from "../core/jogadores/tipos";
 import type { CampoHistorico } from "../database/historico-repositorio";
+import type { NivelEquipe, StatusEquipe } from "../core/equipes/tipos";
 
 // "Record<StatusJogador, string>" obriga a ter um texto para CADA status
 export const ROTULO_STATUS: Record<StatusJogador, string> = {
@@ -37,3 +38,16 @@ export function rotuloDoValor(campo: CampoHistorico, valor: string | null): stri
   if (campo === "status") return ROTULO_STATUS[valor as StatusJogador] ?? valor;
   return valor;
 }
+
+
+export const ROTULO_NIVEL: Record<NivelEquipe, string> = {
+  principal: "Principal",
+  secundaria: "Secundária",
+  academia: "Academia",
+};
+
+export const ROTULO_STATUS_EQUIPE: Record<StatusEquipe, string> = {
+  em_formacao: "🟡 Em formação",
+  ativa: "🟢 Ativa",
+  inativa: "🔴 Inativa",
+};

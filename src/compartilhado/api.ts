@@ -1,4 +1,6 @@
+import type { DadosEquipe, Equipe } from "../core/equipes/tipos";
 import type { DadosJogador, Jogador } from "../core/jogadores/tipos";
+import type { FiltrosEquipes } from "../database/equipes-repositorio";
 import type { FiltrosJogadores } from "../database/jogadores-repositorio";
 import type { EntradaHistorico } from "../database/historico-repositorio";
 
@@ -15,6 +17,10 @@ export const CANAIS = {
   jogadoresBuscar: "jogadores:buscar",
   jogadoresEditar: "jogadores:editar",
   jogadoresHistorico: "jogadores:historico",
+  equipesListar: "equipes:listar",
+  equipesCriar: "equipes:criar",
+  equipesBuscar: "equipes:buscar",
+  equipesEditar: "equipes:editar",
 } as const;
 
 // O que a tela enxerga em window.api: SO ISTO e nada mais
@@ -30,5 +36,11 @@ export interface ApiLol {
       opcoes?: { motivo?: string },
     ): Promise<Resultado<Jogador>>;
     historico(id: number): Promise<Resultado<EntradaHistorico[]>>;
+  };
+  equipes: {
+    listar(filtros?: FiltrosEquipes): Promise<Resultado<Equipe[]>>;
+    criar(dados: DadosEquipe): Promise<Resultado<Equipe>>;
+    buscar(id: number): Promise<Resultado<Equipe | null>>;
+    editar(id: number, dados: DadosEquipe): Promise<Resultado<Equipe>>;
   };
 }

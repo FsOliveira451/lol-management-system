@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { PaginaEquipes } from "./PaginaEquipes";
 import { PaginaJogadores } from "./PaginaJogadores";
 
 type Tela =
@@ -11,7 +12,7 @@ type Tela =
 
 const MENU: { id: Tela; rotulo: string }[] = [
   { id: "dashboard", rotulo: "Dashboard" },
-  { id: "jogadores", rotulo: "Jogadores" },
+  { id: "jogadores", rotulo: "Pessoas" },
   { id: "equipes", rotulo: "Equipes" },
   { id: "eventos", rotulo: "Eventos" },
   { id: "estatisticas", rotulo: "Estatísticas" },
@@ -25,6 +26,13 @@ function TelaEmConstrucao({ titulo }: { titulo: string }) {
       <p className="em-construcao">Esta tela será construída nas próximas etapas.</p>
     </section>
   );
+}
+
+// Escolhe qual tela mostrar
+function Conteudo({ tela, titulo }: { tela: Tela; titulo: string }) {
+  if (tela === "jogadores") return <PaginaJogadores />;
+  if (tela === "equipes") return <PaginaEquipes />;
+  return <TelaEmConstrucao titulo={titulo} />;
 }
 
 export function App() {
@@ -49,11 +57,7 @@ export function App() {
       </aside>
 
       <main className="conteudo">
-        {telaAtiva === "jogadores" ? (
-          <PaginaJogadores />
-        ) : (
-          <TelaEmConstrucao titulo={itemAtivo?.rotulo ?? ""} />
-        )}
+        <Conteudo tela={telaAtiva} titulo={itemAtivo?.rotulo ?? ""} />
       </main>
     </div>
   );

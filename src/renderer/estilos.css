@@ -365,3 +365,17 @@ body {
 .acoes-perfil .botao {
   margin-left: 0;
 }
+
+.tag-equipe {
+  font-family: Consolas, monospace;
+  color: var(--destaque);
+}
+
+.celula-acoes {
+  text-align: right;
+}
+
+.botao-pequeno {
+  padding: 6px 12px;
+  font-size: 13px;
+}
