@@ -1,4 +1,4 @@
-import type { Posicao, StatusJogador } from "../jogadores/tipos";
+import type { Elo, Posicao, StatusJogador } from "../jogadores/tipos";
 
 // Listas oficiais (a "fonte da verdade") e os tipos derivados delas
 export const NIVEIS_EQUIPE = ["principal", "secundaria", "academia"] as const;
@@ -48,4 +48,38 @@ export interface ContextoParticipacao {
   statusEquipe: StatusEquipe;
   ativasDoJogador: ParticipacaoAtiva[]; // todas as participacoes ativas da pessoa, em qualquer equipe
   ativasDaEquipe: ParticipacaoAtiva[]; // todas as participacoes ativas da equipe, de qualquer pessoa
+}
+
+
+// Uma equipe, como ela existe no sistema
+export interface Equipe {
+  id: number;
+  nome: string;
+  tag: string | null;
+  nivel: NivelEquipe;
+  status: StatusEquipe;
+  objetivo: string | null;
+  observacoes: string | null;
+  criadoEm: string;
+  atualizadoEm: string;
+}
+
+// Uma participacao completa (ativa ou ja encerrada)
+export interface Participacao {
+  id: number;
+  equipeId: number;
+  jogadorId: number;
+  funcao: FuncaoEquipe;
+  posicao: Posicao | null;
+  entrouEm: string;
+  saiuEm: string | null; // null = ainda esta na equipe
+  motivoEntrada: string | null;
+  motivoSaida: string | null;
+  responsavel: string | null;
+}
+
+// Participacao + dados da pessoa, para mostrar o "time de hoje"
+export interface Membro extends Participacao {
+  apelido: string;
+  eloAtual: Elo;
 }
