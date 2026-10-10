@@ -2,17 +2,17 @@ import Database from "better-sqlite3";
 import fs from "node:fs";
 import path from "node:path";
 
-// O banco fica em: <pasta do projeto>\data\lol.db
-const PASTA_DADOS = path.join(process.cwd(), "data");
-const ARQUIVO_BANCO = path.join(PASTA_DADOS, "lol.db");
+// Pasta padrao (usada pelos scripts de desenvolvimento): <projeto>\data
+const PASTA_PADRAO = path.join(process.cwd(), "data");
 
-export function abrirBanco(): Database.Database {
-  // Cria a pasta "data" se ela ainda nao existir
-  fs.mkdirSync(PASTA_DADOS, { recursive: true });
+// O programa (Electron) informa a SUA pasta; os scripts usam a padrao.
+export function abrirBanco(pastaDados: string = PASTA_PADRAO): Database.Database {
+  // Cria a pasta se ela ainda nao existir
+  fs.mkdirSync(pastaDados, { recursive: true });
 
-  const banco = new Database(ARQUIVO_BANCO);
+  const banco = new Database(path.join(pastaDados, "lol.db"));
 
-  // Liga a verificacao de relacionamentos entre tabelas (vamos usar depois)
+  // Liga a verificacao de relacionamentos entre tabelas
   banco.pragma("foreign_keys = ON");
 
   return banco;
