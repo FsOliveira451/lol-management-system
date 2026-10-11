@@ -17,6 +17,13 @@ const api: ApiLol = {
     criar: (dados) => ipcRenderer.invoke(CANAIS.equipesCriar, dados),
     buscar: (id) => ipcRenderer.invoke(CANAIS.equipesBuscar, id),
     editar: (id, dados) => ipcRenderer.invoke(CANAIS.equipesEditar, id, dados),
+    membros: (equipeId, incluirHistorico) =>
+      ipcRenderer.invoke(CANAIS.equipesMembros, equipeId, incluirHistorico),
+    adicionarMembro: (pedido) => ipcRenderer.invoke(CANAIS.equipesAdicionarMembro, pedido),
+    encerrarParticipacao: (pedido) =>
+      ipcRenderer.invoke(CANAIS.equipesEncerrarParticipacao, pedido),
+    trocarFuncao: (pedido) => ipcRenderer.invoke(CANAIS.equipesTrocarFuncao, pedido),
+    substituirTitular: (pedido) => ipcRenderer.invoke(CANAIS.equipesSubstituirTitular, pedido),
   },
 };
 

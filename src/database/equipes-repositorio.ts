@@ -1,6 +1,6 @@
 import type Database from "better-sqlite3";
 import { ErroValidacao } from "../core/erros";
-import type { Elo, Posicao, StatusJogador } from "../core/jogadores/tipos";
+import { POSICOES, type Elo, type Posicao, type StatusJogador } from "../core/jogadores/tipos";
 import type {
   ContextoParticipacao,
   DadosEquipe,
@@ -486,4 +486,87 @@ export function listarMembros(
     apelido: linha.apelido,
     eloAtual: linha.elo_atual,
   }));
+}
+
+
+// ---------- substituir o titular de uma posicao ----------
+
+export interface PedidoSubstituicao {
+  equipeId: number;
+  posicao: Posicao;
+  novoJogadorId: number;
+  anteriorVaiParaReserva: boolean;
+}
+
+// Troca quem e titular de uma posicao. TUDO OU NADA: se qualquer passo for
+// recusado, o titular atual continua exatamente como estava.
+export function substituirTitular(
+  banco: Database.Database,
+  pedido: PedidoSubstituicao,
+  opcoes: OpcoesParticipacao = {},
+): Participacao {
+  if (!(POSICOES as readonly string[]).includes(pedido.posicao)) {
+    throw new ErroValidacao(["Posição inválida."]);
+  }
+  if (textoOuNull(opcoes.motivo) === null) {
+    throw new ErroValidacao(["Informe o motivo da substituição."]);
+  }
+
+  const executarTroca = banco.transaction((): Participacao => {
+    const atual = banco
+      .prepare(
+        `SELECT * FROM participacoes_equipe
+         WHERE equipe_id = ? AND funcao = 'titular' AND posicao = ? AND saiu_em IS NULL`,
+      )
+      .get(pedido.equipeId, pedido.posicao) as LinhaParticipacao | undefined;
+
+    if (atual === undefined) {
+      throw new ErroValidacao([
+        "Esta posição não tem titular para substituir. Adicione o titular diretamente.",
+      ]);
+    }
+    if (atual.jogador_id === pedido.novoJogadorId) {
+      throw new ErroValidacao(["Esta pessoa já é a titular desta posição."]);
+    }
+
+    // 1) o titular atual deixa a posicao
+    encerrarParticipacao(banco, atual.id, opcoes);
+
+    // 2) a pessoa nova assume: se ja joga na equipe (reserva, academia...), troca de
+    //    funcao; senao, entra direto como titular
+    const existente = banco
+      .prepare(
+        `SELECT * FROM participacoes_equipe
+         WHERE equipe_id = ? AND jogador_id = ? AND saiu_em IS NULL
+           AND funcao IN ('titular', 'reserva', 'academia')`,
+      )
+      .get(pedido.equipeId, pedido.novoJogadorId) as LinhaParticipacao | undefined;
+
+    const novo =
+      existente !== undefined
+        ? trocarFuncao(banco, existente.id, "titular", pedido.posicao, opcoes)
+        : adicionarMembro(
+            banco,
+            {
+              equipeId: pedido.equipeId,
+              jogadorId: pedido.novoJogadorId,
+              funcao: "titular",
+              posicao: pedido.posicao,
+            },
+            opcoes,
+          );
+
+    // 3) opcional: o titular anterior vira reserva
+    if (pedido.anteriorVaiParaReserva) {
+      adicionarMembro(
+        banco,
+        { equipeId: pedido.equipeId, jogadorId: atual.jogador_id, funcao: "reserva" },
+        { motivo: `Substituído na posição ${pedido.posicao}`, responsavel: opcoes.responsavel },
+      );
+    }
+
+    return novo;
+  });
+
+  return executarTroca();
 }

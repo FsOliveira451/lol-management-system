@@ -19,3 +19,25 @@ export function extrairMotivo(opcoes: unknown): string | undefined {
   const motivo = (opcoes as { motivo?: unknown }).motivo;
   return typeof motivo === "string" ? motivo : undefined;
 }
+
+
+// ---------- leitura segura de "pedidos" que chegam da tela ----------
+// A tela pode mandar QUALQUER coisa. Estas funcoes leem cada campo com desconfianca.
+
+// Garante que o pedido e um objeto comum (nao nulo, nao lista, nao texto)
+export function lerObjeto(valor: unknown): Record<string, unknown> {
+  if (typeof valor !== "object" || valor === null || Array.isArray(valor)) {
+    throw new ErroValidacao(["Pedido inválido."]);
+  }
+  return valor as Record<string, unknown>;
+}
+
+// So aceita texto; qualquer outra coisa vira "nao informado"
+export function lerTexto(valor: unknown): string | undefined {
+  return typeof valor === "string" ? valor : undefined;
+}
+
+// So o valor verdadeiro de verdade conta como "sim"
+export function lerBooleano(valor: unknown): boolean {
+  return valor === true;
+}

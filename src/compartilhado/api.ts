@@ -1,5 +1,11 @@
-import type { DadosEquipe, Equipe } from "../core/equipes/tipos";
-import type { DadosJogador, Jogador } from "../core/jogadores/tipos";
+import type {
+  DadosEquipe,
+  Equipe,
+  FuncaoEquipe,
+  Membro,
+  Participacao,
+} from "../core/equipes/tipos";
+import type { DadosJogador, Jogador, Posicao } from "../core/jogadores/tipos";
 import type { FiltrosEquipes } from "../database/equipes-repositorio";
 import type { FiltrosJogadores } from "../database/jogadores-repositorio";
 import type { EntradaHistorico } from "../database/historico-repositorio";
@@ -21,7 +27,43 @@ export const CANAIS = {
   equipesCriar: "equipes:criar",
   equipesBuscar: "equipes:buscar",
   equipesEditar: "equipes:editar",
+  equipesMembros: "equipes:membros",
+  equipesAdicionarMembro: "equipes:adicionar-membro",
+  equipesEncerrarParticipacao: "equipes:encerrar-participacao",
+  equipesTrocarFuncao: "equipes:trocar-funcao",
+  equipesSubstituirTitular: "equipes:substituir-titular",
 } as const;
+
+// Os "pedidos" que a tela pode fazer sobre membros de equipes.
+// Repare: NENHUM deles tem campo "responsavel". Quem fez a acao sera definido
+// pelo proprio programa (hoje vazio; amanha, quem estiver logado).
+export interface PedidoNovaParticipacao {
+  equipeId: number;
+  jogadorId: number;
+  funcao: FuncaoEquipe;
+  posicao?: Posicao | null;
+  motivo?: string;
+}
+
+export interface PedidoEncerrar {
+  participacaoId: number;
+  motivo: string;
+}
+
+export interface PedidoTrocaFuncao {
+  participacaoId: number;
+  funcao: FuncaoEquipe;
+  posicao?: Posicao | null;
+  motivo: string;
+}
+
+export interface PedidoSubstituicaoTitular {
+  equipeId: number;
+  posicao: Posicao;
+  novoJogadorId: number;
+  anteriorVaiParaReserva: boolean;
+  motivo: string;
+}
 
 // O que a tela enxerga em window.api: SO ISTO e nada mais
 export interface ApiLol {
@@ -42,5 +84,10 @@ export interface ApiLol {
     criar(dados: DadosEquipe): Promise<Resultado<Equipe>>;
     buscar(id: number): Promise<Resultado<Equipe | null>>;
     editar(id: number, dados: DadosEquipe): Promise<Resultado<Equipe>>;
+    membros(equipeId: number, incluirHistorico?: boolean): Promise<Resultado<Membro[]>>;
+    adicionarMembro(pedido: PedidoNovaParticipacao): Promise<Resultado<Participacao>>;
+    encerrarParticipacao(pedido: PedidoEncerrar): Promise<Resultado<Participacao>>;
+    trocarFuncao(pedido: PedidoTrocaFuncao): Promise<Resultado<Participacao>>;
+    substituirTitular(pedido: PedidoSubstituicaoTitular): Promise<Resultado<Participacao>>;
   };
 }
