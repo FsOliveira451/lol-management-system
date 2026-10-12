@@ -10,7 +10,8 @@ const api: ApiLol = {
     buscar: (id) => ipcRenderer.invoke(CANAIS.jogadoresBuscar, id),
     editar: (id, dados, opcoes) =>
       ipcRenderer.invoke(CANAIS.jogadoresEditar, id, dados, opcoes),
-    historico: (id) => ipcRenderer.invoke(CANAIS.jogadoresHistorico, id),
+       historico: (id) => ipcRenderer.invoke(CANAIS.jogadoresHistorico, id),
+    inativar: (pedido) => ipcRenderer.invoke(CANAIS.jogadoresInativar, pedido),
   },
   equipes: {
     listar: (filtros) => ipcRenderer.invoke(CANAIS.equipesListar, filtros),
@@ -23,7 +24,9 @@ const api: ApiLol = {
     encerrarParticipacao: (pedido) =>
       ipcRenderer.invoke(CANAIS.equipesEncerrarParticipacao, pedido),
     trocarFuncao: (pedido) => ipcRenderer.invoke(CANAIS.equipesTrocarFuncao, pedido),
-    substituirTitular: (pedido) => ipcRenderer.invoke(CANAIS.equipesSubstituirTitular, pedido),
+       escalarTitular: (pedido) => ipcRenderer.invoke(CANAIS.equipesEscalarTitular, pedido),
+    designarStaff: (pedido) => ipcRenderer.invoke(CANAIS.equipesDesignarStaff, pedido),
+    inativar: (pedido) => ipcRenderer.invoke(CANAIS.equipesInativar, pedido),
   },
 };
 

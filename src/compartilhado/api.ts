@@ -23,6 +23,7 @@ export const CANAIS = {
   jogadoresBuscar: "jogadores:buscar",
   jogadoresEditar: "jogadores:editar",
   jogadoresHistorico: "jogadores:historico",
+  jogadoresInativar: "jogadores:inativar",
   equipesListar: "equipes:listar",
   equipesCriar: "equipes:criar",
   equipesBuscar: "equipes:buscar",
@@ -31,7 +32,9 @@ export const CANAIS = {
   equipesAdicionarMembro: "equipes:adicionar-membro",
   equipesEncerrarParticipacao: "equipes:encerrar-participacao",
   equipesTrocarFuncao: "equipes:trocar-funcao",
-  equipesSubstituirTitular: "equipes:substituir-titular",
+  equipesEscalarTitular: "equipes:escalar-titular",
+  equipesDesignarStaff: "equipes:designar-staff",
+  equipesInativar: "equipes:inativar",
 } as const;
 
 // Os "pedidos" que a tela pode fazer sobre membros de equipes.
@@ -57,11 +60,31 @@ export interface PedidoTrocaFuncao {
   motivo: string;
 }
 
-export interface PedidoSubstituicaoTitular {
+export interface PedidoEscalarTitular {
   equipeId: number;
   posicao: Posicao;
-  novoJogadorId: number;
+  jogadorId: number;
   anteriorVaiParaReserva: boolean;
+  liberarEmOutraEquipe: boolean;
+  outraEquipeVaiParaReserva: boolean;
+  motivo?: string;
+}
+
+export interface PedidoDesignarStaff {
+  equipeId: number;
+  jogadorId: number;
+  funcao: "capitao" | "coach";
+  motivo?: string;
+}
+
+export interface PedidoInativarEquipe {
+  equipeId: number;
+  motivo: string;
+}
+
+export interface PedidoInativarPessoa {
+  jogadorId: number;
+  status: "inativo" | "fora_do_projeto";
   motivo: string;
 }
 
@@ -78,6 +101,8 @@ export interface ApiLol {
       opcoes?: { motivo?: string },
     ): Promise<Resultado<Jogador>>;
     historico(id: number): Promise<Resultado<EntradaHistorico[]>>;
+    // Inativa a pessoa E a retira de todas as equipes
+    inativar(pedido: PedidoInativarPessoa): Promise<Resultado<Jogador>>;
   };
   equipes: {
     listar(filtros?: FiltrosEquipes): Promise<Resultado<Equipe[]>>;
@@ -88,6 +113,9 @@ export interface ApiLol {
     adicionarMembro(pedido: PedidoNovaParticipacao): Promise<Resultado<Participacao>>;
     encerrarParticipacao(pedido: PedidoEncerrar): Promise<Resultado<Participacao>>;
     trocarFuncao(pedido: PedidoTrocaFuncao): Promise<Resultado<Participacao>>;
-    substituirTitular(pedido: PedidoSubstituicaoTitular): Promise<Resultado<Participacao>>;
+    escalarTitular(pedido: PedidoEscalarTitular): Promise<Resultado<Participacao>>;
+    designarStaff(pedido: PedidoDesignarStaff): Promise<Resultado<Participacao>>;
+    // Inativa a equipe E encerra todas as participacoes dela
+    inativar(pedido: PedidoInativarEquipe): Promise<Resultado<Equipe>>;
   };
 }

@@ -1,6 +1,12 @@
 import type Database from "better-sqlite3";
 import { ErroValidacao } from "../core/erros";
-import { POSICOES, type Elo, type Posicao, type StatusJogador } from "../core/jogadores/tipos";
+import {
+  POSICOES,
+  type Elo,
+  type Jogador,
+  type Posicao,
+  type StatusJogador,
+} from "../core/jogadores/tipos";
 import type {
   ContextoParticipacao,
   DadosEquipe,
@@ -14,6 +20,7 @@ import type {
   StatusEquipe,
 } from "../core/equipes/tipos";
 import { validarDadosEquipe, validarNovaParticipacao } from "../core/equipes/validacao";
+import { editarJogador } from "./jogadores-repositorio";
 
 // ---------- formatos que chegam do banco ----------
 
@@ -243,6 +250,18 @@ export function editarEquipe(
   if (limpos.tag !== undefined && limpos.tag !== null && tagEmUso(banco, limpos.tag, id)) {
     throw new ErroValidacao(["Já existe uma equipe com esta tag."]);
   }
+
+  // Equipe com membros ativos nao pode ser inativada "por fora":
+  // o caminho certo e "Inativar equipe", que encerra as participacoes
+  if (limpos.status === "inativa" && atual.status !== "inativa") {
+    const total = contarParticipacoesAtivasDaEquipe(banco, id);
+    if (total > 0) {
+      throw new ErroValidacao([
+        `Esta equipe tem ${total} participação(ões) ativa(s). Use "Inativar equipe" para encerrá-las, informando o motivo.`,
+      ]);
+    }
+  }
+
 
   const alteracoes: string[] = [];
   const valores: (string | null)[] = [];
@@ -489,84 +508,253 @@ export function listarMembros(
 }
 
 
-// ---------- substituir o titular de uma posicao ----------
+// ---------- escalar um titular (cobre todos os cenarios) ----------
 
-export interface PedidoSubstituicao {
+export interface PedidoEscalacao {
   equipeId: number;
   posicao: Posicao;
-  novoJogadorId: number;
-  anteriorVaiParaReserva: boolean;
+  jogadorId: number;
+  anteriorVaiParaReserva: boolean; // posicao ocupada: o titular atual vira reserva?
+  liberarEmOutraEquipe: boolean; // pessoa titular em outra equipe: liberar la?
+  outraEquipeVaiParaReserva: boolean; // ...e la ela passa a reserva (senao, apenas sai)?
 }
 
-// Troca quem e titular de uma posicao. TUDO OU NADA: se qualquer passo for
-// recusado, o titular atual continua exatamente como estava.
-export function substituirTitular(
+// Coloca uma pessoa como titular de uma posicao, resolvendo os conflitos que o
+// administrador autorizar. TUDO OU NADA: se qualquer passo for recusado, nada muda.
+export function escalarTitular(
   banco: Database.Database,
-  pedido: PedidoSubstituicao,
+  pedido: PedidoEscalacao,
   opcoes: OpcoesParticipacao = {},
 ): Participacao {
   if (!(POSICOES as readonly string[]).includes(pedido.posicao)) {
     throw new ErroValidacao(["Posição inválida."]);
   }
-  if (textoOuNull(opcoes.motivo) === null) {
-    throw new ErroValidacao(["Informe o motivo da substituição."]);
-  }
 
-  const executarTroca = banco.transaction((): Participacao => {
-    const atual = banco
+  const executarEscalacao = banco.transaction((): Participacao => {
+    // Quem e o titular atual desta posicao (se houver)?
+    const ocupante = banco
       .prepare(
         `SELECT * FROM participacoes_equipe
          WHERE equipe_id = ? AND funcao = 'titular' AND posicao = ? AND saiu_em IS NULL`,
       )
       .get(pedido.equipeId, pedido.posicao) as LinhaParticipacao | undefined;
 
-    if (atual === undefined) {
-      throw new ErroValidacao([
-        "Esta posição não tem titular para substituir. Adicione o titular diretamente.",
-      ]);
-    }
-    if (atual.jogador_id === pedido.novoJogadorId) {
+    if (ocupante !== undefined && ocupante.jogador_id === pedido.jogadorId) {
       throw new ErroValidacao(["Esta pessoa já é a titular desta posição."]);
     }
 
-    // 1) o titular atual deixa a posicao
-    encerrarParticipacao(banco, atual.id, opcoes);
+    // A pessoa ja e titular em OUTRA equipe?
+    const emOutraEquipe = banco
+      .prepare(
+        `SELECT p.*, e.nome AS equipe_nome
+         FROM participacoes_equipe p
+         JOIN equipes e ON e.id = p.equipe_id
+         WHERE p.jogador_id = ? AND p.funcao = 'titular' AND p.saiu_em IS NULL
+           AND p.equipe_id <> ?`,
+      )
+      .get(pedido.jogadorId, pedido.equipeId) as
+      | (LinhaParticipacao & { equipe_nome: string })
+      | undefined;
 
-    // 2) a pessoa nova assume: se ja joga na equipe (reserva, academia...), troca de
-    //    funcao; senao, entra direto como titular
+    if (emOutraEquipe !== undefined && !pedido.liberarEmOutraEquipe) {
+      throw new ErroValidacao([
+        `Esta pessoa já é titular em ${emOutraEquipe.equipe_nome}. Para escalá-la aqui, libere a titularidade de lá.`,
+      ]);
+    }
+
+    // A pessoa ja joga nesta equipe (reserva, academia ou outra posicao)?
     const existente = banco
       .prepare(
         `SELECT * FROM participacoes_equipe
          WHERE equipe_id = ? AND jogador_id = ? AND saiu_em IS NULL
            AND funcao IN ('titular', 'reserva', 'academia')`,
       )
-      .get(pedido.equipeId, pedido.novoJogadorId) as LinhaParticipacao | undefined;
+      .get(pedido.equipeId, pedido.jogadorId) as LinhaParticipacao | undefined;
 
-    const novo =
+    // Se alguma participacao vai ser encerrada, o motivo e obrigatorio
+    const algoSeraEncerrado =
+      ocupante !== undefined || emOutraEquipe !== undefined || existente !== undefined;
+    if (algoSeraEncerrado && textoOuNull(opcoes.motivo) === null) {
+      throw new ErroValidacao(["Informe o motivo da mudança de escalação."]);
+    }
+
+    // 1) o titular atual da posicao sai
+    if (ocupante !== undefined) {
+      encerrarParticipacao(banco, ocupante.id, opcoes);
+    }
+
+    // 2) a pessoa e liberada da outra equipe (e, se pedido, vira reserva la)
+    if (emOutraEquipe !== undefined) {
+      encerrarParticipacao(banco, emOutraEquipe.id, opcoes);
+      if (pedido.outraEquipeVaiParaReserva) {
+        adicionarMembro(
+          banco,
+          { equipeId: emOutraEquipe.equipe_id, jogadorId: pedido.jogadorId, funcao: "reserva" },
+          {
+            motivo: "Titularidade passou para outra equipe",
+            responsavel: opcoes.responsavel,
+          },
+        );
+      }
+    }
+
+    // 3) a pessoa assume a posicao (troca de funcao, se ja jogava na equipe)
+    const nova =
       existente !== undefined
         ? trocarFuncao(banco, existente.id, "titular", pedido.posicao, opcoes)
         : adicionarMembro(
             banco,
             {
               equipeId: pedido.equipeId,
-              jogadorId: pedido.novoJogadorId,
+              jogadorId: pedido.jogadorId,
               funcao: "titular",
               posicao: pedido.posicao,
             },
             opcoes,
           );
 
-    // 3) opcional: o titular anterior vira reserva
-    if (pedido.anteriorVaiParaReserva) {
+    // 4) o titular anterior vira reserva (opcional)
+    if (ocupante !== undefined && pedido.anteriorVaiParaReserva) {
       adicionarMembro(
         banco,
-        { equipeId: pedido.equipeId, jogadorId: atual.jogador_id, funcao: "reserva" },
+        { equipeId: pedido.equipeId, jogadorId: ocupante.jogador_id, funcao: "reserva" },
         { motivo: `Substituído na posição ${pedido.posicao}`, responsavel: opcoes.responsavel },
       );
     }
 
-    return novo;
+    return nova;
   });
 
-  return executarTroca();
+  return executarEscalacao();
+}
+
+// ---------- capitao e coach ----------
+
+export interface PedidoStaff {
+  equipeId: number;
+  jogadorId: number;
+  funcao: "capitao" | "coach";
+}
+
+// Designa o capitao ou o coach. Se ja existir um, ele sai (com motivo obrigatorio)
+export function designarStaff(
+  banco: Database.Database,
+  pedido: PedidoStaff,
+  opcoes: OpcoesParticipacao = {},
+): Participacao {
+  if (pedido.funcao !== "capitao" && pedido.funcao !== "coach") {
+    throw new ErroValidacao(["A função deve ser capitão ou coach."]);
+  }
+
+  const designar = banco.transaction((): Participacao => {
+    const atual = banco
+      .prepare(
+        `SELECT * FROM participacoes_equipe
+         WHERE equipe_id = ? AND funcao = ? AND saiu_em IS NULL`,
+      )
+      .get(pedido.equipeId, pedido.funcao) as LinhaParticipacao | undefined;
+
+    if (atual !== undefined) {
+      if (atual.jogador_id === pedido.jogadorId) {
+        throw new ErroValidacao(["Esta pessoa já tem esta função nesta equipe."]);
+      }
+      if (textoOuNull(opcoes.motivo) === null) {
+        throw new ErroValidacao(["Informe o motivo da substituição."]);
+      }
+      encerrarParticipacao(banco, atual.id, opcoes);
+    }
+
+    return adicionarMembro(
+      banco,
+      { equipeId: pedido.equipeId, jogadorId: pedido.jogadorId, funcao: pedido.funcao },
+      opcoes,
+    );
+  });
+
+  return designar();
+}
+
+// ---------- inativar mantendo tudo consistente ----------
+
+function contarParticipacoesAtivasDaEquipe(
+  banco: Database.Database,
+  equipeId: number,
+): number {
+  const linha = banco
+    .prepare(
+      "SELECT COUNT(*) AS total FROM participacoes_equipe WHERE equipe_id = ? AND saiu_em IS NULL",
+    )
+    .get(equipeId) as { total: number };
+  return linha.total;
+}
+
+// Inativa a equipe E encerra todas as participacoes dela (tudo ou nada)
+export function inativarEquipe(
+  banco: Database.Database,
+  equipeId: number,
+  opcoes: OpcoesParticipacao = {},
+): Equipe {
+  const equipe = buscarEquipePorId(banco, equipeId);
+  if (equipe === null) {
+    throw new ErroValidacao(["Equipe não encontrada."]);
+  }
+  if (equipe.status === "inativa") {
+    throw new ErroValidacao(["Esta equipe já está inativa."]);
+  }
+  const motivo = textoOuNull(opcoes.motivo);
+  if (motivo === null) {
+    throw new ErroValidacao(["Informe o motivo da inativação."]);
+  }
+
+  const inativar = banco.transaction((): Equipe => {
+    const ativas = banco
+      .prepare("SELECT id FROM participacoes_equipe WHERE equipe_id = ? AND saiu_em IS NULL")
+      .all(equipeId) as { id: number }[];
+
+    for (const { id } of ativas) {
+      encerrarParticipacao(banco, id, { motivo: `Equipe inativada: ${motivo}` });
+    }
+
+    banco
+      .prepare("UPDATE equipes SET status = 'inativa', atualizado_em = datetime('now') WHERE id = ?")
+      .run(equipeId);
+
+    const atualizada = buscarEquipePorId(banco, equipeId);
+    if (atualizada === null) {
+      throw new Error("Falha ao ler a equipe inativada.");
+    }
+    return atualizada;
+  });
+
+  return inativar();
+}
+
+// Inativa a PESSOA E a retira de todas as equipes (tudo ou nada)
+export function inativarPessoa(
+  banco: Database.Database,
+  jogadorId: number,
+  status: "inativo" | "fora_do_projeto",
+  opcoes: OpcoesParticipacao = {},
+): Jogador {
+  if (status !== "inativo" && status !== "fora_do_projeto") {
+    throw new ErroValidacao(["O status deve ser inativo ou fora do projeto."]);
+  }
+  const motivo = textoOuNull(opcoes.motivo);
+  if (motivo === null) {
+    throw new ErroValidacao(["Informe o motivo da mudança de status."]);
+  }
+
+  const inativar = banco.transaction((): Jogador => {
+    const ativas = banco
+      .prepare("SELECT id FROM participacoes_equipe WHERE jogador_id = ? AND saiu_em IS NULL")
+      .all(jogadorId) as { id: number }[];
+
+    for (const { id } of ativas) {
+      encerrarParticipacao(banco, id, { motivo: `Pessoa inativada: ${motivo}` });
+    }
+
+    return editarJogador(banco, jogadorId, { status }, { motivo, responsavel: opcoes.responsavel });
+  });
+
+  return inativar();
 }

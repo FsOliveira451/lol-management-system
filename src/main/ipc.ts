@@ -19,7 +19,10 @@ import {
   encerrarParticipacao,
   listarEquipes,
   listarMembros,
-  substituirTitular,
+    designarStaff,
+  escalarTitular,
+  inativarEquipe,
+  inativarPessoa,
   trocarFuncao,
   type FiltrosEquipes,
 } from "../database/equipes-repositorio";
@@ -128,17 +131,53 @@ export function registrarIpc(banco: Database.Database): void {
     }),
   );
 
-  ipcMain.handle(CANAIS.equipesSubstituirTitular, (_evento, pedido: unknown) =>
+    ipcMain.handle(CANAIS.equipesEscalarTitular, (_evento, pedido: unknown) =>
     executar(() => {
       const p = lerObjeto(pedido);
-      return substituirTitular(
+      return escalarTitular(
         banco,
         {
           equipeId: exigirId(p.equipeId),
           posicao: lerTexto(p.posicao) as Posicao,
-          novoJogadorId: exigirId(p.novoJogadorId),
+          jogadorId: exigirId(p.jogadorId),
           anteriorVaiParaReserva: lerBooleano(p.anteriorVaiParaReserva),
+          liberarEmOutraEquipe: lerBooleano(p.liberarEmOutraEquipe),
+          outraEquipeVaiParaReserva: lerBooleano(p.outraEquipeVaiParaReserva),
         },
+        { motivo: lerTexto(p.motivo) },
+      );
+    }),
+  );
+
+  ipcMain.handle(CANAIS.equipesDesignarStaff, (_evento, pedido: unknown) =>
+    executar(() => {
+      const p = lerObjeto(pedido);
+      return designarStaff(
+        banco,
+        {
+          equipeId: exigirId(p.equipeId),
+          jogadorId: exigirId(p.jogadorId),
+          funcao: lerTexto(p.funcao) as "capitao" | "coach",
+        },
+        { motivo: lerTexto(p.motivo) },
+      );
+    }),
+  );
+
+  ipcMain.handle(CANAIS.equipesInativar, (_evento, pedido: unknown) =>
+    executar(() => {
+      const p = lerObjeto(pedido);
+      return inativarEquipe(banco, exigirId(p.equipeId), { motivo: lerTexto(p.motivo) });
+    }),
+  );
+
+  ipcMain.handle(CANAIS.jogadoresInativar, (_evento, pedido: unknown) =>
+    executar(() => {
+      const p = lerObjeto(pedido);
+      return inativarPessoa(
+        banco,
+        exigirId(p.jogadorId),
+        lerTexto(p.status) as "inativo" | "fora_do_projeto",
         { motivo: lerTexto(p.motivo) },
       );
     }),

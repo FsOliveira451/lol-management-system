@@ -116,6 +116,16 @@ function riotIdEmUso(
   return linha !== undefined;
 }
 
+// Quantas participacoes ativas (em equipes) esta pessoa tem
+function contarParticipacoesAtivas(banco: Database.Database, jogadorId: number): number {
+  const linha = banco
+    .prepare(
+      "SELECT COUNT(*) AS total FROM participacoes_equipe WHERE jogador_id = ? AND saiu_em IS NULL",
+    )
+    .get(jogadorId) as { total: number };
+  return linha.total;
+}
+
 export function buscarJogadorPorId(
   banco: Database.Database,
   id: number,
@@ -271,6 +281,18 @@ export function editarJogador(
   const erros = validarDadosJogador(combinado, "editar");
   if (erros.length > 0) {
     throw new ErroValidacao(erros);
+  }
+
+  // Quem esta em alguma equipe nao pode ficar inativo sem antes sair
+  // (evita elenco com gente inativa)
+  const vaiSair = dados.status === "inativo" || dados.status === "fora_do_projeto";
+  if (vaiSair) {
+    const total = contarParticipacoesAtivas(banco, id);
+    if (total > 0) {
+      throw new ErroValidacao([
+        `Esta pessoa tem ${total} participação(ões) ativa(s) em equipes. Retire-a das equipes ou use "Inativar e retirar das equipes".`,
+      ]);
+    }
   }
 
   // Regra do projeto: nao alterar o status sem motivo
