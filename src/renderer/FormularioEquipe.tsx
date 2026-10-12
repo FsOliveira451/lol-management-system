@@ -105,7 +105,9 @@ export function FormularioEquipe({ equipe, aoSalvar, aoCancelar }: Props) {
               value={valores.status}
               onChange={(e) => atualizar("status", e.target.value as StatusEquipe)}
             >
-              {STATUS_EQUIPE.map((status) => (
+                          {STATUS_EQUIPE.filter(
+                (status) => status !== "inativa" || equipe?.status === "inativa",
+              ).map((status) => (
                 <option key={status} value={status}>
                   {ROTULO_STATUS_EQUIPE[status]}
                 </option>

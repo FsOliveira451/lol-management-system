@@ -4,6 +4,7 @@ import type {
   FuncaoEquipe,
   Membro,
   Participacao,
+  ParticipacaoDaPessoa,
 } from "../core/equipes/tipos";
 import type { DadosJogador, Jogador, Posicao } from "../core/jogadores/tipos";
 import type { FiltrosEquipes } from "../database/equipes-repositorio";
@@ -24,6 +25,7 @@ export const CANAIS = {
   jogadoresEditar: "jogadores:editar",
   jogadoresHistorico: "jogadores:historico",
   jogadoresInativar: "jogadores:inativar",
+  jogadoresParticipacoes: "jogadores:participacoes",
   equipesListar: "equipes:listar",
   equipesCriar: "equipes:criar",
   equipesBuscar: "equipes:buscar",
@@ -103,6 +105,8 @@ export interface ApiLol {
     historico(id: number): Promise<Resultado<EntradaHistorico[]>>;
     // Inativa a pessoa E a retira de todas as equipes
     inativar(pedido: PedidoInativarPessoa): Promise<Resultado<Jogador>>;
+    // As equipes em que a pessoa esta agora
+    participacoes(id: number): Promise<Resultado<ParticipacaoDaPessoa[]>>;
   };
   equipes: {
     listar(filtros?: FiltrosEquipes): Promise<Resultado<Equipe[]>>;

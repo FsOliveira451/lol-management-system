@@ -379,3 +379,152 @@ body {
   padding: 6px 12px;
   font-size: 13px;
 }
+
+.escalacao {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 12px;
+}
+
+.cartao-vaga {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px;
+  background: var(--fundo);
+  border: 1px solid var(--borda);
+  border-radius: 10px;
+  color: var(--texto);
+  text-align: left;
+  font-family: inherit;
+  font-size: 14px;
+}
+
+.cartao-vaga.vazia {
+  border-style: dashed;
+  color: var(--texto-suave);
+  cursor: pointer;
+}
+
+.cartao-vaga.vazia:hover:not(:disabled) {
+  border-color: var(--destaque);
+  color: var(--destaque);
+}
+
+.cartao-vaga.vazia:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.vaga-posicao {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--destaque);
+}
+
+.vaga-detalhe {
+  font-size: 12px;
+  color: var(--texto-suave);
+}
+
+.vaga-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.selo-papel {
+  align-self: flex-start;
+  padding: 2px 8px;
+  border: 1px solid var(--destaque);
+  border-radius: 999px;
+  font-size: 11px;
+  color: var(--destaque);
+}
+
+.alerta-linha {
+  padding: 8px 12px;
+  margin-bottom: 6px;
+  border-left: 4px solid var(--borda);
+  background: var(--fundo);
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.alerta-critico {
+  border-left-color: #ff5c5c;
+}
+
+.alerta-atencao {
+  border-left-color: #ff9f43;
+}
+
+.alerta-observacao {
+  border-left-color: #f1c40f;
+}
+
+.alerta-normal {
+  border-left-color: #3ddc84;
+}
+
+.plano {
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  background: var(--fundo);
+  border: 1px solid var(--borda);
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.plano ul {
+  margin: 8px 0 0;
+  padding-left: 20px;
+}
+
+.plano-bloqueio {
+  margin: 8px 0 0;
+  color: #ff8a80;
+}
+
+.aviso-equipe-inativa {
+  padding: 10px 14px;
+  margin: 12px 0;
+  background: rgba(255, 138, 128, 0.1);
+  border: 1px solid #ff8a80;
+  border-radius: 8px;
+  color: #ff8a80;
+  font-size: 14px;
+}
+
+.lista-membros {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.linha-membro {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: var(--fundo);
+  border: 1px solid var(--borda);
+  border-radius: 8px;
+}
+
+.linha-membro .nome {
+  flex: 1;
+}
+
+.movimentacao {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--borda);
+  font-size: 14px;
+}
+
+.movimentacao .detalhe {
+  font-size: 13px;
+  color: var(--texto-suave);
+}

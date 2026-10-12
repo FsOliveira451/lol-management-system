@@ -83,3 +83,13 @@ export interface Membro extends Participacao {
   apelido: string;
   eloAtual: Elo;
 }
+
+
+// Uma participacao ativa de uma pessoa, com o nome da equipe (para mostrar na tela)
+export interface ParticipacaoDaPessoa {
+  participacaoId: number;
+  equipeId: number;
+  equipeNome: string;
+  funcao: FuncaoEquipe;
+  posicao: Posicao | null;
+}

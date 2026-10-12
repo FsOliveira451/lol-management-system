@@ -17,6 +17,7 @@ import type {
   NovaParticipacao,
   Participacao,
   ParticipacaoAtiva,
+  ParticipacaoDaPessoa,
   StatusEquipe,
 } from "../core/equipes/tipos";
 import { validarDadosEquipe, validarNovaParticipacao } from "../core/equipes/validacao";
@@ -757,4 +758,35 @@ export function inativarPessoa(
   });
 
   return inativar();
+}
+
+
+// As participacoes ativas de uma pessoa, em qualquer equipe
+export function listarParticipacoesAtivasDaPessoa(
+  banco: Database.Database,
+  jogadorId: number,
+): ParticipacaoDaPessoa[] {
+  const linhas = banco
+    .prepare(
+      `SELECT p.id AS participacao_id, p.equipe_id, e.nome AS equipe_nome, p.funcao, p.posicao
+       FROM participacoes_equipe p
+       JOIN equipes e ON e.id = p.equipe_id
+       WHERE p.jogador_id = ? AND p.saiu_em IS NULL
+       ORDER BY e.nome COLLATE NOCASE, p.funcao`,
+    )
+    .all(jogadorId) as {
+    participacao_id: number;
+    equipe_id: number;
+    equipe_nome: string;
+    funcao: FuncaoEquipe;
+    posicao: Posicao | null;
+  }[];
+
+  return linhas.map((linha) => ({
+    participacaoId: linha.participacao_id,
+    equipeId: linha.equipe_id,
+    equipeNome: linha.equipe_nome,
+    funcao: linha.funcao,
+    posicao: linha.posicao,
+  }));
 }

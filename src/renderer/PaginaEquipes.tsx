@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { Equipe } from "../core/equipes/tipos";
 import { FormularioEquipe } from "./FormularioEquipe";
+import { PaginaEquipe } from "./PaginaEquipe";
 import { ROTULO_NIVEL, ROTULO_STATUS_EQUIPE } from "./formatacao";
 
 export function PaginaEquipes() {
@@ -12,6 +13,7 @@ export function PaginaEquipes() {
   const [erro, setErro] = useState<string | null>(null);
   const [formularioAberto, setFormularioAberto] = useState(false);
   const [equipeEmEdicao, setEquipeEmEdicao] = useState<Equipe | null>(null);
+  const [equipeAbertaId, setEquipeAbertaId] = useState<number | null>(null);
 
   useEffect(() => {
     if (window.api === undefined) {
@@ -47,6 +49,19 @@ export function PaginaEquipes() {
       cancelado = true;
     };
   }, [busca, mostrarInativas, versao]);
+
+  // Se uma equipe foi aberta, mostra a tela dela no lugar da lista
+  if (equipeAbertaId !== null) {
+    return (
+      <PaginaEquipe
+        equipeId={equipeAbertaId}
+        aoVoltar={() => {
+          setEquipeAbertaId(null);
+          setVersao((v) => v + 1); // o status pode ter mudado: recarrega a lista
+        }}
+      />
+    );
+  }
 
   function fecharFormulario() {
     setFormularioAberto(false);
@@ -100,13 +115,23 @@ export function PaginaEquipes() {
         </thead>
         <tbody>
           {equipes.map((equipe) => (
-            <tr key={equipe.id}>
+            <tr
+              key={equipe.id}
+              className="linha-clicavel"
+              onClick={() => setEquipeAbertaId(equipe.id)}
+            >
               <td>{equipe.nome}</td>
               <td className="tag-equipe">{equipe.tag ?? "N/D"}</td>
               <td>{ROTULO_NIVEL[equipe.nivel]}</td>
               <td>{ROTULO_STATUS_EQUIPE[equipe.status]}</td>
               <td className="celula-acoes">
-                <button className="botao botao-pequeno" onClick={() => setEquipeEmEdicao(equipe)}>
+                <button
+                  className="botao botao-pequeno"
+                  onClick={(evento) => {
+                    evento.stopPropagation(); // nao abre a equipe, so o formulario
+                    setEquipeEmEdicao(equipe);
+                  }}
+                >
                   Editar
                 </button>
               </td>

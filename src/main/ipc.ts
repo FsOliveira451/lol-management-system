@@ -18,7 +18,8 @@ import {
   editarEquipe,
   encerrarParticipacao,
   listarEquipes,
-  listarMembros,
+    listarMembros,
+  listarParticipacoesAtivasDaPessoa,
     designarStaff,
   escalarTitular,
   inativarEquipe,
@@ -64,7 +65,9 @@ export function registrarIpc(banco: Database.Database): void {
   ipcMain.handle(CANAIS.jogadoresHistorico, (_evento, id: unknown) =>
     executar(() => listarHistoricoDoJogador(banco, exigirId(id))),
   );
-
+  ipcMain.handle(CANAIS.jogadoresParticipacoes, (_evento, id: unknown) =>
+    executar(() => listarParticipacoesAtivasDaPessoa(banco, exigirId(id))),
+  );
   // ---------- equipes ----------
   ipcMain.handle(CANAIS.equipesListar, (_evento, filtros?: FiltrosEquipes) =>
     executar(() => listarEquipes(banco, filtros)),

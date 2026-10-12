@@ -1,6 +1,7 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
+import type { ParticipacaoDaPessoa } from "../core/equipes/tipos";
 import { STATUS_JOGADOR, type Jogador, type StatusJogador } from "../core/jogadores/tipos";
-import { ROTULO_STATUS } from "./formatacao";
+import { ROTULO_FUNCAO, ROTULO_STATUS } from "./formatacao";
 
 interface Props {
   jogador: Jogador;
@@ -11,10 +12,26 @@ interface Props {
 export function AlterarStatus({ jogador, aoConcluir, aoCancelar }: Props) {
   const [novoStatus, setNovoStatus] = useState<StatusJogador>(jogador.status);
   const [motivo, setMotivo] = useState("");
+  const [participacoes, setParticipacoes] = useState<ParticipacaoDaPessoa[]>([]);
   const [erros, setErros] = useState<string[]>([]);
   const [salvando, setSalvando] = useState(false);
 
+  // Em quais equipes a pessoa esta hoje (para avisar antes de inativar)
+  useEffect(() => {
+    let cancelado = false;
+    window.api.jogadores
+      .participacoes(jogador.id)
+      .then((resultado) => {
+        if (!cancelado && resultado.ok) setParticipacoes(resultado.dados);
+      })
+      .catch(() => {});
+    return () => {
+      cancelado = true;
+    };
+  }, [jogador.id]);
+
   const semMudanca = novoStatus === jogador.status;
+  const saindo = novoStatus === "inativo" || novoStatus === "fora_do_projeto";
 
   async function enviar(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault();
@@ -22,11 +39,16 @@ export function AlterarStatus({ jogador, aoConcluir, aoCancelar }: Props) {
     setErros([]);
 
     try {
-      const resultado = await window.api.jogadores.editar(
-        jogador.id,
-        { status: novoStatus },
-        { motivo },
-      );
+      // Inativar tambem retira a pessoa das equipes (tudo ou nada)
+      const resultado =
+        novoStatus === "inativo" || novoStatus === "fora_do_projeto"
+          ? await window.api.jogadores.inativar({
+              jogadorId: jogador.id,
+              status: novoStatus,
+              motivo,
+            })
+          : await window.api.jogadores.editar(jogador.id, { status: novoStatus }, { motivo });
+
       if (resultado.ok) {
         aoConcluir();
       } else {
@@ -58,6 +80,21 @@ export function AlterarStatus({ jogador, aoConcluir, aoCancelar }: Props) {
             ))}
           </select>
         </label>
+
+        {saindo && !semMudanca && participacoes.length > 0 && (
+          <div className="plano">
+            <strong>Atenção: esta pessoa será retirada das equipes</strong>
+            <ul>
+              {participacoes.map((p) => (
+                <li key={p.participacaoId}>
+                  {p.equipeNome}: {ROTULO_FUNCAO[p.funcao]}
+                  {p.posicao ? ` (${p.posicao})` : ""}
+                </li>
+              ))}
+            </ul>
+            <p className="dica">As saídas ficam registradas no histórico de cada equipe.</p>
+          </div>
+        )}
 
         <label className="campo">
           Motivo *

@@ -1,6 +1,7 @@
 import type { StatusJogador } from "../core/jogadores/tipos";
 import type { CampoHistorico } from "../database/historico-repositorio";
-import type { NivelEquipe, StatusEquipe } from "../core/equipes/tipos";
+import type { NivelAlerta } from "../core/equipes/alertas";
+import type { FuncaoEquipe, NivelEquipe, StatusEquipe } from "../core/equipes/tipos";
 
 // "Record<StatusJogador, string>" obriga a ter um texto para CADA status
 export const ROTULO_STATUS: Record<StatusJogador, string> = {
@@ -50,4 +51,20 @@ export const ROTULO_STATUS_EQUIPE: Record<StatusEquipe, string> = {
   em_formacao: "🟡 Em formação",
   ativa: "🟢 Ativa",
   inativa: "🔴 Inativa",
+};
+
+
+export const ROTULO_FUNCAO: Record<FuncaoEquipe, string> = {
+  titular: "Titular",
+  reserva: "Reserva",
+  academia: "Academia",
+  capitao: "Capitão",
+  coach: "Coach",
+};
+
+export const ICONE_ALERTA: Record<NivelAlerta, string> = {
+  critico: "🔴",
+  atencao: "🟠",
+  observacao: "🟡",
+  normal: "🟢",
 };
