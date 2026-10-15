@@ -6,8 +6,14 @@ import type {
   Participacao,
   ParticipacaoDaPessoa,
 } from "../core/equipes/tipos";
+import type {
+  DadosEvento,
+  EntradaHistoricoEvento,
+  Evento,
+} from "../core/eventos/tipos";
 import type { DadosJogador, Jogador, Posicao } from "../core/jogadores/tipos";
 import type { FiltrosEquipes } from "../database/equipes-repositorio";
+import type { FiltrosEventos } from "../database/eventos-repositorio";
 import type { FiltrosJogadores } from "../database/jogadores-repositorio";
 import type { EntradaHistorico } from "../database/historico-repositorio";
 
@@ -37,6 +43,14 @@ export const CANAIS = {
   equipesEscalarTitular: "equipes:escalar-titular",
   equipesDesignarStaff: "equipes:designar-staff",
   equipesInativar: "equipes:inativar",
+  eventosListar: "eventos:listar",
+  eventosCriar: "eventos:criar",
+  eventosBuscar: "eventos:buscar",
+  eventosEditar: "eventos:editar",
+  eventosCancelar: "eventos:cancelar",
+  eventosRealizado: "eventos:realizado",
+  eventosConflitos: "eventos:conflitos",
+  eventosHistorico: "eventos:historico",
 } as const;
 
 // Os "pedidos" que a tela pode fazer sobre membros de equipes.
@@ -90,6 +104,29 @@ export interface PedidoInativarPessoa {
   motivo: string;
 }
 
+// Os "pedidos" sobre eventos
+export interface PedidoCriarEvento {
+  dados: DadosEvento;
+  ignorarConflitos?: boolean;
+}
+
+export interface PedidoEditarEvento {
+  id: number;
+  dados: DadosEvento;
+  motivo?: string;
+  ignorarConflitos?: boolean;
+}
+
+export interface PedidoCancelarEvento {
+  id: number;
+  motivo: string;
+}
+
+export interface PedidoConflitos {
+  dados: { inicio: string; duracaoMin: number; equipeIds: number[] };
+  ignorarId?: number;
+}
+
 // O que a tela enxerga em window.api: SO ISTO e nada mais
 export interface ApiLol {
   jogadores: {
@@ -121,5 +158,17 @@ export interface ApiLol {
     designarStaff(pedido: PedidoDesignarStaff): Promise<Resultado<Participacao>>;
     // Inativa a equipe E encerra todas as participacoes dela
     inativar(pedido: PedidoInativarEquipe): Promise<Resultado<Equipe>>;
+  };
+  eventos: {
+    listar(filtros?: FiltrosEventos): Promise<Resultado<Evento[]>>;
+    criar(pedido: PedidoCriarEvento): Promise<Resultado<Evento>>;
+    buscar(id: number): Promise<Resultado<Evento | null>>;
+    editar(pedido: PedidoEditarEvento): Promise<Resultado<Evento>>;
+    cancelar(pedido: PedidoCancelarEvento): Promise<Resultado<Evento>>;
+    // O "agora" e definido pelo programa, nao pela tela
+    marcarRealizado(id: number): Promise<Resultado<Evento>>;
+    // Para a tela avisar do conflito enquanto o formulario e preenchido
+    conflitos(pedido: PedidoConflitos): Promise<Resultado<Evento[]>>;
+    historico(id: number): Promise<Resultado<EntradaHistoricoEvento[]>>;
   };
 }

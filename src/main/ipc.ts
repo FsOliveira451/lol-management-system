@@ -11,6 +11,20 @@ import {
   lerTexto,
 } from "../compartilhado/entrada";
 import { executar } from "../compartilhado/executar";
+import { agoraLocal } from "../core/eventos/tempo";
+import type { DadosEvento } from "../core/eventos/tipos";
+import {
+  buscarEventoPorId,
+  cancelarEvento,
+  criarEvento,
+  editarEvento,
+  listarConflitos,
+  listarEventos,
+  listarHistoricoDoEvento,
+  marcarComoRealizado,
+  type FiltrosEventos,
+} from "../database/eventos-repositorio";
+
 import {
   adicionarMembro,
   buscarEquipePorId,
@@ -67,6 +81,67 @@ export function registrarIpc(banco: Database.Database): void {
   );
   ipcMain.handle(CANAIS.jogadoresParticipacoes, (_evento, id: unknown) =>
     executar(() => listarParticipacoesAtivasDaPessoa(banco, exigirId(id))),
+  );
+    // ---------- eventos ----------
+  ipcMain.handle(CANAIS.eventosListar, (_evento, filtros?: FiltrosEventos) =>
+    executar(() => listarEventos(banco, filtros)),
+  );
+
+  ipcMain.handle(CANAIS.eventosCriar, (_evento, pedido: unknown) =>
+    executar(() => {
+      const p = lerObjeto(pedido);
+      return criarEvento(banco, lerObjeto(p.dados) as DadosEvento, {
+        ignorarConflitos: lerBooleano(p.ignorarConflitos),
+      });
+    }),
+  );
+
+  ipcMain.handle(CANAIS.eventosBuscar, (_evento, id: unknown) =>
+    executar(() => buscarEventoPorId(banco, exigirId(id))),
+  );
+
+  ipcMain.handle(CANAIS.eventosEditar, (_evento, pedido: unknown) =>
+    executar(() => {
+      const p = lerObjeto(pedido);
+      return editarEvento(banco, exigirId(p.id), lerObjeto(p.dados) as DadosEvento, {
+        motivo: lerTexto(p.motivo),
+        ignorarConflitos: lerBooleano(p.ignorarConflitos),
+      });
+    }),
+  );
+
+  ipcMain.handle(CANAIS.eventosCancelar, (_evento, pedido: unknown) =>
+    executar(() => {
+      const p = lerObjeto(pedido);
+      return cancelarEvento(banco, exigirId(p.id), { motivo: lerTexto(p.motivo) });
+    }),
+  );
+
+  // O "agora" e do PROGRAMA: a tela nao tem como informar (ou forjar) a hora
+  ipcMain.handle(CANAIS.eventosRealizado, (_evento, id: unknown) =>
+    executar(() => marcarComoRealizado(banco, exigirId(id), agoraLocal())),
+  );
+
+  ipcMain.handle(CANAIS.eventosConflitos, (_evento, pedido: unknown) =>
+    executar(() => {
+      const p = lerObjeto(pedido);
+      const d = lerObjeto(p.dados);
+      return listarConflitos(
+        banco,
+        {
+          inicio: lerTexto(d.inicio) ?? "",
+          duracaoMin: typeof d.duracaoMin === "number" ? d.duracaoMin : 0,
+          equipeIds: Array.isArray(d.equipeIds)
+            ? d.equipeIds.filter((id): id is number => typeof id === "number")
+            : [],
+        },
+        p.ignorarId === undefined ? undefined : exigirId(p.ignorarId),
+      );
+    }),
+  );
+
+  ipcMain.handle(CANAIS.eventosHistorico, (_evento, id: unknown) =>
+    executar(() => listarHistoricoDoEvento(banco, exigirId(id))),
   );
   // ---------- equipes ----------
   ipcMain.handle(CANAIS.equipesListar, (_evento, filtros?: FiltrosEquipes) =>

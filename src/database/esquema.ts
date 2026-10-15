@@ -94,7 +94,50 @@ export function criarTabelas(banco: Database.Database): void {
       ON participacoes_equipe (equipe_id, posicao) WHERE funcao = 'titular' AND saiu_em IS NULL;
     CREATE UNIQUE INDEX IF NOT EXISTS ux_capitao_unico
       ON participacoes_equipe (equipe_id) WHERE funcao = 'capitao' AND saiu_em IS NULL;
-    CREATE UNIQUE INDEX IF NOT EXISTS ux_coach_unico
+        CREATE UNIQUE INDEX IF NOT EXISTS ux_coach_unico
       ON participacoes_equipe (equipe_id) WHERE funcao = 'coach' AND saiu_em IS NULL;
+
+    CREATE TABLE IF NOT EXISTS eventos (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      tipo TEXT NOT NULL
+        CHECK (tipo IN ('treino','scrim','amistoso','tryout','vod','reuniao','campeonato')),
+      titulo TEXT,
+      inicio TEXT NOT NULL,
+      duracao_min INTEGER NOT NULL CHECK (duracao_min BETWEEN 15 AND 720),
+      status TEXT NOT NULL DEFAULT 'agendado'
+        CHECK (status IN ('agendado','realizado','cancelado')),
+      adversario TEXT,
+      nivel_adversario TEXT
+        CHECK (nivel_adversario IS NULL
+               OR nivel_adversario IN ('inferior','semelhante','superior','desconhecido')),
+      partidas_previstas INTEGER
+        CHECK (partidas_previstas IS NULL OR partidas_previstas BETWEEN 1 AND 9),
+      objetivo TEXT,
+      local TEXT,
+      regras TEXT,
+      observacoes TEXT,
+      criado_em TEXT NOT NULL DEFAULT (datetime('now')),
+      atualizado_em TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS eventos_equipes (
+      evento_id INTEGER NOT NULL REFERENCES eventos(id),
+      equipe_id INTEGER NOT NULL REFERENCES equipes(id),
+      PRIMARY KEY (evento_id, equipe_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS historico_evento (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      evento_id INTEGER NOT NULL REFERENCES eventos(id),
+      campo TEXT NOT NULL CHECK (campo IN ('inicio','duracao_min','status','equipes')),
+      valor_anterior TEXT,
+      valor_novo TEXT,
+      motivo TEXT,
+      responsavel TEXT,
+      registrado_em TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_eventos_inicio ON eventos (inicio);
+    CREATE INDEX IF NOT EXISTS idx_eventos_equipes_equipe ON eventos_equipes (equipe_id);
   `);
 }

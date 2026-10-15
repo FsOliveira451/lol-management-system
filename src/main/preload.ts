@@ -29,6 +29,16 @@ const api: ApiLol = {
     designarStaff: (pedido) => ipcRenderer.invoke(CANAIS.equipesDesignarStaff, pedido),
     inativar: (pedido) => ipcRenderer.invoke(CANAIS.equipesInativar, pedido),
   },
+  eventos: {
+    listar: (filtros) => ipcRenderer.invoke(CANAIS.eventosListar, filtros),
+    criar: (pedido) => ipcRenderer.invoke(CANAIS.eventosCriar, pedido),
+    buscar: (id) => ipcRenderer.invoke(CANAIS.eventosBuscar, id),
+    editar: (pedido) => ipcRenderer.invoke(CANAIS.eventosEditar, pedido),
+    cancelar: (pedido) => ipcRenderer.invoke(CANAIS.eventosCancelar, pedido),
+    marcarRealizado: (id) => ipcRenderer.invoke(CANAIS.eventosRealizado, id),
+    conflitos: (pedido) => ipcRenderer.invoke(CANAIS.eventosConflitos, pedido),
+    historico: (id) => ipcRenderer.invoke(CANAIS.eventosHistorico, id),
+  },
 };
 
 // Expoe como "window.api" dentro da tela

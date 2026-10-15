@@ -50,3 +50,53 @@ export interface DadosEvento {
   regras?: string | null; // restricoes de campeoes, observador, transmissao...
   observacoes?: string | null;
 }
+
+
+// Nomes para mostrar na tela e em mensagens
+export const NOME_TIPO_EVENTO: Record<TipoEvento, string> = {
+  treino: "Treino",
+  scrim: "Scrim",
+  amistoso: "Amistoso",
+  tryout: "Tryout",
+  vod: "Análise de VOD",
+  reuniao: "Reunião",
+  campeonato: "Campeonato",
+};
+
+export interface EquipeDoEvento {
+  id: number;
+  nome: string;
+}
+
+// Um evento, como ele existe no sistema
+export interface Evento {
+  id: number;
+  tipo: TipoEvento;
+  titulo: string | null;
+  inicio: string; // "AAAA-MM-DD HH:MM", horario local da organizacao
+  duracaoMin: number;
+  status: StatusEvento;
+  adversario: string | null;
+  nivelAdversario: NivelAdversario | null;
+  partidasPrevistas: number | null;
+  objetivo: string | null;
+  local: string | null;
+  regras: string | null;
+  observacoes: string | null;
+  criadoEm: string;
+  atualizadoEm: string;
+  equipes: EquipeDoEvento[];
+}
+
+export type CampoHistoricoEvento = "inicio" | "duracao_min" | "status" | "equipes";
+
+export interface EntradaHistoricoEvento {
+  id: number;
+  eventoId: number;
+  campo: CampoHistoricoEvento;
+  valorAnterior: string | null;
+  valorNovo: string | null;
+  motivo: string | null;
+  responsavel: string | null;
+  registradoEm: string;
+}
