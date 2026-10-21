@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { PaginaEquipes } from "./PaginaEquipes";
+import { PaginaEventos } from "./PaginaEventos";
 import { PaginaJogadores } from "./PaginaJogadores";
 
 type Tela =
@@ -32,6 +33,7 @@ function TelaEmConstrucao({ titulo }: { titulo: string }) {
 function Conteudo({ tela, titulo }: { tela: Tela; titulo: string }) {
   if (tela === "jogadores") return <PaginaJogadores />;
   if (tela === "equipes") return <PaginaEquipes />;
+  if (tela === "eventos") return <PaginaEventos />;
   return <TelaEmConstrucao titulo={titulo} />;
 }
 

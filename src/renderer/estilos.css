@@ -528,3 +528,193 @@ body {
   font-size: 13px;
   color: var(--texto-suave);
 }
+
+/* ---------- Eventos: calendario e lista ---------- */
+
+.navegacao-mes {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-right: 12px;
+}
+
+.titulo-mes {
+  min-width: 170px;
+  text-align: center;
+}
+
+.seletor {
+  padding: 8px 12px;
+  background: var(--painel);
+  border: 1px solid var(--borda);
+  border-radius: 8px;
+  color: var(--texto);
+  font-size: 14px;
+  font-family: inherit;
+  color-scheme: dark;
+}
+
+.botao-ativo {
+  background: var(--destaque);
+  color: #1a1405;
+  font-weight: 600;
+}
+
+.botao-ativo:hover {
+  background: #d9b45a;
+}
+
+.calendario {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.cabecalho-dia {
+  padding: 6px;
+  text-align: center;
+  font-size: 12px;
+  text-transform: uppercase;
+  color: var(--texto-suave);
+}
+
+.dia-calendario {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 110px;
+  padding: 6px;
+  background: var(--painel);
+  border: 1px solid var(--borda);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.dia-calendario:hover {
+  border-color: var(--destaque);
+}
+
+.dia-calendario.vazio {
+  background: transparent;
+  border-color: transparent;
+  cursor: default;
+}
+
+.dia-calendario.hoje {
+  border-color: var(--destaque);
+}
+
+.numero-dia {
+  font-size: 13px;
+  color: var(--texto-suave);
+}
+
+.hoje .numero-dia {
+  color: var(--destaque);
+  font-weight: 700;
+}
+
+.mais-eventos {
+  font-size: 11px;
+  color: var(--texto-suave);
+}
+
+.chip-evento {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 3px 6px;
+  border: 0;
+  border-left: 3px solid var(--borda);
+  border-radius: 4px;
+  background: var(--fundo);
+  color: var(--texto);
+  font-family: inherit;
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.chip-agendado {
+  border-left-color: #4da3ff;
+}
+
+.chip-em_andamento {
+  border-left-color: #3ddc84;
+}
+
+.chip-pendente_registro {
+  border-left-color: #ff9f43;
+  background: rgba(255, 159, 67, 0.15);
+}
+
+.chip-realizado {
+  border-left-color: #6b7c93;
+  color: var(--texto-suave);
+}
+
+.chip-cancelado {
+  border-left-color: #ff5c5c;
+  color: var(--texto-suave);
+  text-decoration: line-through;
+}
+
+.texto-riscado {
+  text-decoration: line-through;
+  color: var(--texto-suave);
+}
+
+/* ---------- Eventos: formulario ---------- */
+
+.modal-larga {
+  max-width: 720px;
+}
+
+.grade-equipes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  padding: 10px 12px;
+  background: var(--fundo);
+  border: 1px solid var(--borda);
+  border-radius: 8px;
+  color: var(--texto);
+  font-size: 14px;
+}
+
+.aviso-conflito {
+  padding: 10px 14px;
+  margin-bottom: 14px;
+  background: rgba(255, 159, 67, 0.12);
+  border: 1px solid #ff9f43;
+  border-radius: 8px;
+  color: #ffb870;
+  font-size: 14px;
+}
+
+.aviso-conflito ul {
+  margin: 8px 0;
+  padding-left: 20px;
+}
+
+/* ---------- Eventos: detalhe ---------- */
+
+.cabecalho-detalhe {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.cabecalho-detalhe h3 {
+  margin: 0;
+}
+
+.acoes-detalhe {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 14px;
+}
