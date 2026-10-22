@@ -39,6 +39,15 @@ const api: ApiLol = {
     conflitos: (pedido) => ipcRenderer.invoke(CANAIS.eventosConflitos, pedido),
     historico: (id) => ipcRenderer.invoke(CANAIS.eventosHistorico, id),
   },
+  presenca: {
+    convocados: (eventoId) => ipcRenderer.invoke(CANAIS.presencaConvocados, eventoId),
+    convocarEquipes: (eventoId) => ipcRenderer.invoke(CANAIS.presencaConvocarEquipes, eventoId),
+    adicionar: (pedido) => ipcRenderer.invoke(CANAIS.presencaAdicionar, pedido),
+    remover: (pedido) => ipcRenderer.invoke(CANAIS.presencaRemover, pedido),
+    definirEstado: (pedido) => ipcRenderer.invoke(CANAIS.presencaDefinirEstado, pedido),
+    daPessoa: (jogadorId) => ipcRenderer.invoke(CANAIS.presencaDaPessoa, jogadorId),
+    conflitosPessoas: (pedido) => ipcRenderer.invoke(CANAIS.presencaConflitosPessoas, pedido),
+  },
 };
 
 // Expoe como "window.api" dentro da tela

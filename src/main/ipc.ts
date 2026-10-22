@@ -12,11 +12,11 @@ import {
 } from "../compartilhado/entrada";
 import { executar } from "../compartilhado/executar";
 import { agoraLocal } from "../core/eventos/tempo";
-import type { DadosEvento } from "../core/eventos/tipos";
+import type { DadosEvento, TipoEvento } from "../core/eventos/tipos";
+import type { EstadoPresenca } from "../core/presenca/tipos";
 import {
   buscarEventoPorId,
   cancelarEvento,
-  criarEvento,
   editarEvento,
   listarConflitos,
   listarEventos,
@@ -24,7 +24,6 @@ import {
   marcarComoRealizado,
   type FiltrosEventos,
 } from "../database/eventos-repositorio";
-
 import {
   adicionarMembro,
   buscarEquipePorId,
@@ -32,9 +31,9 @@ import {
   editarEquipe,
   encerrarParticipacao,
   listarEquipes,
-    listarMembros,
+  listarMembros,
   listarParticipacoesAtivasDaPessoa,
-    designarStaff,
+  designarStaff,
   escalarTitular,
   inativarEquipe,
   inativarPessoa,
@@ -49,11 +48,21 @@ import {
   listarJogadores,
   type FiltrosJogadores,
 } from "../database/jogadores-repositorio";
+import {
+  adicionarConvocado,
+  convocarAutomaticamente,
+  criarEventoComConvocacao,
+  definirEstado,
+  listarConflitosDePessoas,
+  listarConvocados,
+  removerConvocado,
+  resumirPresencaDaPessoa,
+} from "../database/presenca-repositorio";
 
 // Registra o que o "gerente" sabe responder.
 // REGRA DE OURO: tudo que chega da tela e NAO CONFIAVEL. Cada campo e lido com
 // desconfianca, as funcoes chamadas validam os dados, e os valores so entram
-// no SQL como parametros. O "responsavel" NUNCA vem da tela.
+// no SQL como parametros. O "responsavel" e o "agora" NUNCA vem da tela.
 export function registrarIpc(banco: Database.Database): void {
   // ---------- pessoas (jogadores e staff) ----------
   ipcMain.handle(CANAIS.jogadoresListar, (_evento, filtros?: FiltrosJogadores) =>
@@ -79,18 +88,21 @@ export function registrarIpc(banco: Database.Database): void {
   ipcMain.handle(CANAIS.jogadoresHistorico, (_evento, id: unknown) =>
     executar(() => listarHistoricoDoJogador(banco, exigirId(id))),
   );
+
   ipcMain.handle(CANAIS.jogadoresParticipacoes, (_evento, id: unknown) =>
     executar(() => listarParticipacoesAtivasDaPessoa(banco, exigirId(id))),
   );
-    // ---------- eventos ----------
+
+  // ---------- eventos ----------
   ipcMain.handle(CANAIS.eventosListar, (_evento, filtros?: FiltrosEventos) =>
     executar(() => listarEventos(banco, filtros)),
   );
 
+  // Cria o evento E convoca os membros ativos das equipes (tudo ou nada)
   ipcMain.handle(CANAIS.eventosCriar, (_evento, pedido: unknown) =>
     executar(() => {
       const p = lerObjeto(pedido);
-      return criarEvento(banco, lerObjeto(p.dados) as DadosEvento, {
+      return criarEventoComConvocacao(banco, lerObjeto(p.dados) as DadosEvento, {
         ignorarConflitos: lerBooleano(p.ignorarConflitos),
       });
     }),
@@ -143,6 +155,65 @@ export function registrarIpc(banco: Database.Database): void {
   ipcMain.handle(CANAIS.eventosHistorico, (_evento, id: unknown) =>
     executar(() => listarHistoricoDoEvento(banco, exigirId(id))),
   );
+
+  // ---------- presenca e convocacao ----------
+  ipcMain.handle(CANAIS.presencaConvocados, (_evento, eventoId: unknown) =>
+    executar(() => listarConvocados(banco, exigirId(eventoId))),
+  );
+
+  ipcMain.handle(CANAIS.presencaConvocarEquipes, (_evento, eventoId: unknown) =>
+    executar(() => convocarAutomaticamente(banco, exigirId(eventoId))),
+  );
+
+  ipcMain.handle(CANAIS.presencaAdicionar, (_evento, pedido: unknown) =>
+    executar(() => {
+      const p = lerObjeto(pedido);
+      return adicionarConvocado(banco, exigirId(p.eventoId), exigirId(p.jogadorId));
+    }),
+  );
+
+  ipcMain.handle(CANAIS.presencaRemover, (_evento, pedido: unknown) =>
+    executar(() => {
+      const p = lerObjeto(pedido);
+      return removerConvocado(banco, exigirId(p.eventoId), exigirId(p.jogadorId));
+    }),
+  );
+
+  // O "agora" tambem e do PROGRAMA: ninguem registra presenca "do futuro"
+  ipcMain.handle(CANAIS.presencaDefinirEstado, (_evento, pedido: unknown) =>
+    executar(() => {
+      const p = lerObjeto(pedido);
+      return definirEstado(
+        banco,
+        exigirId(p.eventoId),
+        exigirId(p.jogadorId),
+        lerTexto(p.estado) as EstadoPresenca,
+        agoraLocal(),
+      );
+    }),
+  );
+
+  ipcMain.handle(CANAIS.presencaDaPessoa, (_evento, jogadorId: unknown) =>
+    executar(() => resumirPresencaDaPessoa(banco, exigirId(jogadorId))),
+  );
+
+  ipcMain.handle(CANAIS.presencaConflitosPessoas, (_evento, pedido: unknown) =>
+    executar(() => {
+      const p = lerObjeto(pedido);
+      return listarConflitosDePessoas(banco, {
+        tipo: lerTexto(p.tipo) as TipoEvento,
+        inicio: lerTexto(p.inicio) ?? "",
+        duracaoMin: typeof p.duracaoMin === "number" ? p.duracaoMin : 0,
+        equipeIds: Array.isArray(p.equipeIds)
+          ? p.equipeIds.filter((id): id is number => typeof id === "number")
+          : [],
+        ...(p.ignorarEventoId === undefined
+          ? {}
+          : { ignorarEventoId: exigirId(p.ignorarEventoId) }),
+      });
+    }),
+  );
+
   // ---------- equipes ----------
   ipcMain.handle(CANAIS.equipesListar, (_evento, filtros?: FiltrosEquipes) =>
     executar(() => listarEquipes(banco, filtros)),
@@ -209,7 +280,7 @@ export function registrarIpc(banco: Database.Database): void {
     }),
   );
 
-    ipcMain.handle(CANAIS.equipesEscalarTitular, (_evento, pedido: unknown) =>
+  ipcMain.handle(CANAIS.equipesEscalarTitular, (_evento, pedido: unknown) =>
     executar(() => {
       const p = lerObjeto(pedido);
       return escalarTitular(

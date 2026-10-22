@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { Jogador } from "../core/jogadores/tipos";
 import type { EntradaHistorico } from "../database/historico-repositorio";
 import { AlterarStatus } from "./AlterarStatus";
+import { CartaoPresenca } from "./CartaoPresenca";
 import { FormularioJogador } from "./FormularioJogador";
 import {
   ROTULO_CAMPO,
@@ -22,7 +23,7 @@ export function PerfilJogador({ jogadorId, aoVoltar }: Props) {
   const [erro, setErro] = useState<string | null>(null);
   const [versao, setVersao] = useState(0);
   const [alterandoStatus, setAlterandoStatus] = useState(false);
-    const [editandoDados, setEditandoDados] = useState(false);
+  const [editandoDados, setEditandoDados] = useState(false);
 
   useEffect(() => {
     let cancelado = false;
@@ -97,7 +98,7 @@ export function PerfilJogador({ jogadorId, aoVoltar }: Props) {
       <header className="perfil-cabecalho">
         <h2>{jogador.apelido}</h2>
         <span className="selo-status">{ROTULO_STATUS[jogador.status]}</span>
-               <div className="acoes-perfil">
+        <div className="acoes-perfil">
           <button className="botao" onClick={() => setEditandoDados(true)}>
             Editar dados
           </button>
@@ -121,6 +122,8 @@ export function PerfilJogador({ jogadorId, aoVoltar }: Props) {
         </dl>
         <p className="dica">{jogador.observacoes ?? "Nenhuma observação."}</p>
       </div>
+
+      <CartaoPresenca jogadorId={jogador.id} />
 
       <div className="cartao">
         <h3>Histórico de mudanças</h3>
@@ -162,7 +165,7 @@ export function PerfilJogador({ jogadorId, aoVoltar }: Props) {
         />
       )}
 
-            {editandoDados && (
+      {editandoDados && (
         <FormularioJogador
           jogador={jogador}
           aoCancelar={() => setEditandoDados(false)}

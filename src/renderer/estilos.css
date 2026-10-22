@@ -1143,3 +1143,51 @@ h2 {
   gap: 12px;
   margin-bottom: 14px;
 }
+
+/* ---------- Presenca ---------- */
+
+.seletor-pequeno {
+  padding: 6px 10px;
+  font-size: 13px;
+}
+
+.linha-adicionar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.indicadores {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.indicador {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 16px;
+  background: linear-gradient(180deg, var(--fundo-2), var(--fundo));
+  border: 1px solid var(--borda-forte);
+  border-radius: 12px;
+  box-shadow: var(--realce), 0 6px 14px rgba(0, 0, 0, 0.4);
+}
+
+.indicador-valor {
+  font-size: 26px;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 0 18px rgba(34, 211, 238, 0.4);
+}
+
+.indicador-rotulo {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--texto-suave);
+}

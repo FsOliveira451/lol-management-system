@@ -10,6 +10,7 @@ import {
   type StatusEvento,
 } from "../core/eventos/tipos";
 import { formatarDataHora } from "./formatacao";
+import { PainelPresenca } from "./PainelPresenca";
 
 interface Props {
   eventoId: number;
@@ -319,6 +320,8 @@ export function DetalheEvento({ eventoId, versao, aoFechar, aoEditar, aoMudou }:
         {evento.status === "agendado" && !jaComecou && (
           <p className="dica">Só é possível marcar como realizado depois que o evento começar.</p>
         )}
+
+        {!cancelado && <PainelPresenca evento={evento} versao={versao} />}
 
         <div className="cartao">
           <h3>Histórico</h3>

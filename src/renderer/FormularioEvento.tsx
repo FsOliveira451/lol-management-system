@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import type { Equipe } from "../core/equipes/tipos";
-import { descreverQuando, rotuloDoEvento } from "../core/eventos/rotulos";
+import { descreverQuando, formatarInicio, rotuloDoEvento } from "../core/eventos/rotulos";
 import {
   DURACAO_PADRAO,
   NIVEIS_ADVERSARIO,
@@ -11,6 +11,7 @@ import {
   type NivelAdversario,
   type TipoEvento,
 } from "../core/eventos/tipos";
+import type { ConflitoDePessoa } from "../database/presenca-repositorio";
 import {
   converterFormularioEvento,
   valoresDoEvento,
@@ -49,6 +50,7 @@ export function FormularioEvento({ evento, diaInicial, aoCancelar, aoSalvar }: P
   );
   const [equipes, setEquipes] = useState<Equipe[]>([]);
   const [conflitos, setConflitos] = useState<Evento[]>([]);
+  const [conflitosPessoas, setConflitosPessoas] = useState<ConflitoDePessoa[]>([]);
   const [ignorarConflitos, setIgnorarConflitos] = useState(false);
   const [motivo, setMotivo] = useState("");
   const [erros, setErros] = useState<string[]>([]);
@@ -118,6 +120,37 @@ export function FormularioEvento({ evento, diaInicial, aoCancelar, aoSalvar }: P
       })
       .catch(() => {
         if (!cancelado) setConflitos([]);
+      });
+
+    return () => {
+      cancelado = true;
+    };
+  }, [valores.data, valores.hora, valores.duracao, valores.tipo, valores.equipeIds, evento]);
+
+  // AVISO DE CONFLITO POR PESSOA: quem seria convocado ja esta em outro evento no mesmo horario?
+  // So avisa: nao bloqueia e nao tem "agendar mesmo assim".
+  useEffect(() => {
+    let cancelado = false;
+
+    if (valores.data === "" || valores.hora === "" || valores.equipeIds.length === 0) {
+      setConflitosPessoas([]);
+      return;
+    }
+
+    const dados = converterFormularioEvento(valores);
+    window.api.presenca
+      .conflitosPessoas({
+        tipo: valores.tipo,
+        inicio: dados.inicio ?? "",
+        duracaoMin: dados.duracaoMin ?? 0,
+        equipeIds: dados.equipeIds ?? [],
+        ...(evento !== null ? { ignorarEventoId: evento.id } : {}),
+      })
+      .then((res) => {
+        if (!cancelado) setConflitosPessoas(res.ok ? res.dados : []);
+      })
+      .catch(() => {
+        if (!cancelado) setConflitosPessoas([]);
       });
 
     return () => {
@@ -289,6 +322,28 @@ export function FormularioEvento({ evento, diaInicial, aoCancelar, aoSalvar }: P
               />
               Agendar mesmo assim
             </label>
+          </div>
+        )}
+
+        {conflitosPessoas.length > 0 && (
+          <div className="aviso-conflito">
+            <strong>👥 Pessoas já convocadas para outro evento neste horário</strong>
+            <ul>
+              {conflitosPessoas.map((conflito) => (
+                <li key={conflito.jogadorId}>
+                  <strong>{conflito.apelido}</strong>:{" "}
+                  {conflito.eventos
+                    .map(
+                      (outro) =>
+                        `${outro.titulo ?? NOME_TIPO_EVENTO[outro.tipo]} (${formatarInicio(outro.inicio)})`,
+                    )
+                    .join("; ")}
+                </li>
+              ))}
+            </ul>
+            <span className="dica sem-margem">
+              É só um aviso: você pode agendar normalmente e ajustar a convocação depois.
+            </span>
           </div>
         )}
 

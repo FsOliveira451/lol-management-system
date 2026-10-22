@@ -138,6 +138,28 @@ export function criarTabelas(banco: Database.Database): void {
     );
 
     CREATE INDEX IF NOT EXISTS idx_eventos_inicio ON eventos (inicio);
-    CREATE INDEX IF NOT EXISTS idx_eventos_equipes_equipe ON eventos_equipes (equipe_id);
+       CREATE INDEX IF NOT EXISTS idx_eventos_equipes_equipe ON eventos_equipes (equipe_id);
+
+    -- Quem foi convocado para cada evento e em que estado de presenca esta.
+    -- equipe_id e funcao guardam a "foto" do momento da convocacao (podem ser NULL: convocacao avulsa).
+    CREATE TABLE IF NOT EXISTS eventos_participantes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      evento_id INTEGER NOT NULL REFERENCES eventos(id),
+      jogador_id INTEGER NOT NULL REFERENCES jogadores(id),
+      equipe_id INTEGER REFERENCES equipes(id),
+      funcao TEXT
+        CHECK (funcao IS NULL OR funcao IN ('titular','reserva','academia','capitao','coach')),
+      papel TEXT NOT NULL CHECK (papel IN ('jogador','staff')),
+      estado TEXT NOT NULL DEFAULT 'convocado'
+        CHECK (estado IN ('convocado','confirmado','presente','atrasou','faltou','justificado')),
+      criado_em TEXT NOT NULL DEFAULT (datetime('now')),
+      atualizado_em TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    -- Cinto de seguranca: uma convocacao por pessoa por evento
+    CREATE UNIQUE INDEX IF NOT EXISTS ux_convocacao_unica
+      ON eventos_participantes (evento_id, jogador_id);
+    CREATE INDEX IF NOT EXISTS idx_convocacoes_jogador
+      ON eventos_participantes (jogador_id);
   `);
 }

@@ -12,10 +12,17 @@ import type {
   Evento,
 } from "../core/eventos/tipos";
 import type { DadosJogador, Jogador, Posicao } from "../core/jogadores/tipos";
+import type { ConvocacaoEvento, EstadoPresenca } from "../core/presenca/tipos";
 import type { FiltrosEquipes } from "../database/equipes-repositorio";
 import type { FiltrosEventos } from "../database/eventos-repositorio";
 import type { FiltrosJogadores } from "../database/jogadores-repositorio";
 import type { EntradaHistorico } from "../database/historico-repositorio";
+import type {
+  ConflitoDePessoa,
+  PedidoConflitosPessoas,
+  PresencaDaPessoa,
+  ResultadoConvocacao,
+} from "../database/presenca-repositorio";
 
 // Toda resposta do programa para a tela e UMA destas duas formas:
 // deu certo (com os dados) ou deu errado (com uma lista de mensagens)
@@ -51,6 +58,13 @@ export const CANAIS = {
   eventosRealizado: "eventos:realizado",
   eventosConflitos: "eventos:conflitos",
   eventosHistorico: "eventos:historico",
+  presencaConvocados: "presenca:convocados",
+  presencaConvocarEquipes: "presenca:convocar-equipes",
+  presencaAdicionar: "presenca:adicionar",
+  presencaRemover: "presenca:remover",
+  presencaDefinirEstado: "presenca:definir-estado",
+  presencaDaPessoa: "presenca:da-pessoa",
+  presencaConflitosPessoas: "presenca:conflitos-pessoas",
 } as const;
 
 // Os "pedidos" que a tela pode fazer sobre membros de equipes.
@@ -127,6 +141,18 @@ export interface PedidoConflitos {
   ignorarId?: number;
 }
 
+// Os "pedidos" sobre presenca. Tambem sem "responsavel" e sem "agora".
+export interface PedidoConvocado {
+  eventoId: number;
+  jogadorId: number;
+}
+
+export interface PedidoEstadoPresenca {
+  eventoId: number;
+  jogadorId: number;
+  estado: EstadoPresenca;
+}
+
 // O que a tela enxerga em window.api: SO ISTO e nada mais
 export interface ApiLol {
   jogadores: {
@@ -161,6 +187,7 @@ export interface ApiLol {
   };
   eventos: {
     listar(filtros?: FiltrosEventos): Promise<Resultado<Evento[]>>;
+    // Ao criar, o programa ja convoca os membros ativos das equipes
     criar(pedido: PedidoCriarEvento): Promise<Resultado<Evento>>;
     buscar(id: number): Promise<Resultado<Evento | null>>;
     editar(pedido: PedidoEditarEvento): Promise<Resultado<Evento>>;
@@ -170,5 +197,17 @@ export interface ApiLol {
     // Para a tela avisar do conflito enquanto o formulario e preenchido
     conflitos(pedido: PedidoConflitos): Promise<Resultado<Evento[]>>;
     historico(id: number): Promise<Resultado<EntradaHistoricoEvento[]>>;
+  };
+  presenca: {
+    convocados(eventoId: number): Promise<Resultado<ConvocacaoEvento[]>>;
+    // Convoca quem falta das equipes do evento (nunca remove ninguem)
+    convocarEquipes(eventoId: number): Promise<Resultado<ResultadoConvocacao>>;
+    adicionar(pedido: PedidoConvocado): Promise<Resultado<ConvocacaoEvento>>;
+    remover(pedido: PedidoConvocado): Promise<Resultado<ConvocacaoEvento>>;
+    definirEstado(pedido: PedidoEstadoPresenca): Promise<Resultado<ConvocacaoEvento>>;
+    // Presenca calculada de uma pessoa (percentual, tendencia, alerta)
+    daPessoa(jogadorId: number): Promise<Resultado<PresencaDaPessoa>>;
+    // Pessoas que seriam convocadas e ja estao em outro evento no mesmo horario
+    conflitosPessoas(pedido: PedidoConflitosPessoas): Promise<Resultado<ConflitoDePessoa[]>>;
   };
 }
