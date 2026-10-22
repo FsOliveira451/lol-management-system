@@ -125,29 +125,47 @@ export function PerfilJogador({ jogadorId, aoVoltar }: Props) {
 
       <CartaoPresenca jogadorId={jogador.id} />
 
-      <div className="cartao">
+            <div className="cartao">
         <h3>Histórico de mudanças</h3>
         {historico.length === 0 ? (
           <p className="em-construcao">Nenhum registro.</p>
         ) : (
-          <ol className="linha-do-tempo">
-            {[...historico].reverse().map((evento) => (
-              <li key={evento.id} className="evento">
-                <div className="evento-topo">
-                  <strong>{ROTULO_CAMPO[evento.campo]}</strong>
-                  <span className="evento-data">{formatarDataHora(evento.registradoEm)}</span>
+          <ol className="historico">
+            {[...historico].reverse().map((entrada) => (
+              <li key={entrada.id} className="historico-item">
+                <span className="historico-campo">{ROTULO_CAMPO[entrada.campo]}</span>
+
+                <div className="historico-corpo">
+                  <div className="historico-mudanca">
+                    {entrada.valorAnterior === null ? (
+                      <>
+                        <span className="historico-prefixo">Definido como</span>
+                        <span className="valor-novo">
+                          {rotuloDoValor(entrada.campo, entrada.valorNovo)}
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="valor-antigo">
+                          {rotuloDoValor(entrada.campo, entrada.valorAnterior)}
+                        </span>
+                        <span className="historico-seta">→</span>
+                        <span className="valor-novo">
+                          {rotuloDoValor(entrada.campo, entrada.valorNovo)}
+                        </span>
+                      </>
+                    )}
+                  </div>
+
+                  {(entrada.motivo !== null || entrada.responsavel !== null) && (
+                    <div className="historico-meta">
+                      {entrada.motivo !== null && <span>Motivo: {entrada.motivo}</span>}
+                      {entrada.responsavel !== null && <span>Por: {entrada.responsavel}</span>}
+                    </div>
+                  )}
                 </div>
-                <div>
-                  {evento.valorAnterior === null
-                    ? `Definido como ${rotuloDoValor(evento.campo, evento.valorNovo)}`
-                    : `${rotuloDoValor(evento.campo, evento.valorAnterior)} → ${rotuloDoValor(evento.campo, evento.valorNovo)}`}
-                </div>
-                {evento.motivo !== null && (
-                  <div className="evento-motivo">Motivo: {evento.motivo}</div>
-                )}
-                {evento.responsavel !== null && (
-                  <div className="evento-motivo">Por: {evento.responsavel}</div>
-                )}
+
+                <time className="historico-data">{formatarDataHora(entrada.registradoEm)}</time>
               </li>
             ))}
           </ol>
