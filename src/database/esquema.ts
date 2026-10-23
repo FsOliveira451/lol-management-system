@@ -159,7 +159,45 @@ export function criarTabelas(banco: Database.Database): void {
     -- Cinto de seguranca: uma convocacao por pessoa por evento
     CREATE UNIQUE INDEX IF NOT EXISTS ux_convocacao_unica
       ON eventos_participantes (evento_id, jogador_id);
-    CREATE INDEX IF NOT EXISTS idx_convocacoes_jogador
+       CREATE INDEX IF NOT EXISTS idx_convocacoes_jogador
       ON eventos_participantes (jogador_id);
+
+    -- Partidas de scrims, amistosos e campeonatos.
+    -- vencedor_equipe_id: NULL = o adversario externo venceu.
+    -- origem e riot_match_id ja existem para a futura integracao com a Riot.
+    CREATE TABLE IF NOT EXISTS partidas (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      evento_id INTEGER NOT NULL REFERENCES eventos(id),
+      numero INTEGER NOT NULL CHECK (numero BETWEEN 1 AND 9),
+      vencedor_equipe_id INTEGER REFERENCES equipes(id),
+      duracao_min INTEGER CHECK (duracao_min IS NULL OR duracao_min BETWEEN 5 AND 180),
+      observacoes TEXT,
+      origem TEXT NOT NULL DEFAULT 'manual' CHECK (origem IN ('manual','riot')),
+      riot_match_id TEXT,
+      criado_em TEXT NOT NULL DEFAULT (datetime('now')),
+      atualizado_em TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    -- Cintos de seguranca do banco
+    CREATE UNIQUE INDEX IF NOT EXISTS ux_partida_numero
+      ON partidas (evento_id, numero);
+    CREATE UNIQUE INDEX IF NOT EXISTS ux_partida_riot
+      ON partidas (riot_match_id) WHERE riot_match_id IS NOT NULL;
+
+    -- Historico: guarda partida_id SEM chave estrangeira de proposito,
+    -- para a trilha sobreviver a uma partida apagada.
+    CREATE TABLE IF NOT EXISTS historico_partida (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      evento_id INTEGER NOT NULL REFERENCES eventos(id),
+      partida_id INTEGER NOT NULL,
+      campo TEXT NOT NULL CHECK (campo IN ('numero','vencedor','duracao_min','situacao')),
+      valor_anterior TEXT,
+      valor_novo TEXT,
+      motivo TEXT,
+      responsavel TEXT,
+      registrado_em TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_historico_partida_evento
+      ON historico_partida (evento_id, id);
   `);
 }

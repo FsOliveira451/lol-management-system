@@ -13,6 +13,7 @@ import {
 import {
   ICONE_TIPO,
   ROTULO_SITUACAO,
+  formatarInicio,
   rotuloDoEvento,
 } from "../core/eventos/rotulos";
 import { agoraLocal, situacaoDoEvento } from "../core/eventos/tempo";
@@ -23,11 +24,14 @@ import {
   type TipoEvento,
 } from "../core/eventos/tipos";
 import type { FiltrosEventos } from "../database/eventos-repositorio";
+import type { PendenciaDeResultado } from "../database/partidas-repositorio";
 import { DetalheEvento } from "./DetalheEvento";
 import { FormularioEvento } from "./FormularioEvento";
+import { ICONE_ALERTA } from "./formatacao";
 
 const DIAS_DA_SEMANA = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
 const MAXIMO_CHIPS_POR_DIA = 3;
+const MAXIMO_PENDENCIAS_VISIVEIS = 5;
 
 type Modo = "calendario" | "lista";
 
@@ -46,6 +50,7 @@ export function PaginaEventos() {
 
   const [eventos, setEventos] = useState<Evento[]>([]);
   const [equipes, setEquipes] = useState<Equipe[]>([]);
+  const [pendencias, setPendencias] = useState<PendenciaDeResultado[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
   const [formulario, setFormulario] = useState<FormularioAberto | null>(null);
@@ -69,6 +74,22 @@ export function PaginaEventos() {
       cancelado = true;
     };
   }, []);
+
+  // Eventos que terminaram sem resultado (de qualquer mes), recarregados a cada gravacao
+  useEffect(() => {
+    let cancelado = false;
+    window.api.partidas
+      .pendencias()
+      .then((res) => {
+        if (!cancelado && res.ok) setPendencias(res.dados);
+      })
+      .catch(() => {
+        // sem a faixa de pendencias, o resto da pagina continua funcionando
+      });
+    return () => {
+      cancelado = true;
+    };
+  }, [versao]);
 
   // Carrega os eventos do mes sempre que o mes, um filtro ou a versao mudar
   useEffect(() => {
@@ -142,6 +163,29 @@ export function PaginaEventos() {
         <h2>Eventos</h2>
         {carregando && <span className="aviso">Carregando...</span>}
       </div>
+
+      {pendencias.length > 0 && (
+        <div className="cartao">
+          <h3>Resultados pendentes</h3>
+          {pendencias.slice(0, MAXIMO_PENDENCIAS_VISIVEIS).map((pendencia) => (
+            <button
+              key={pendencia.codigo}
+              className={`alerta-linha alerta-${pendencia.nivel} alerta-clicavel`}
+              onClick={() => setDetalheId(pendencia.eventoId)}
+            >
+              {ICONE_ALERTA[pendencia.nivel]} {pendencia.titulo ?? NOME_TIPO_EVENTO[pendencia.tipo]} ·{" "}
+              {formatarInicio(pendencia.inicio)}
+              {pendencia.equipes.length > 0 ? ` · ${pendencia.equipes.join(", ")}` : ""} ·{" "}
+              {pendencia.mensagem}
+            </button>
+          ))}
+          {pendencias.length > MAXIMO_PENDENCIAS_VISIVEIS && (
+            <p className="dica sem-margem">
+              + {pendencias.length - MAXIMO_PENDENCIAS_VISIVEIS} pendência(s) mais antiga(s) ou menos urgente(s).
+            </p>
+          )}
+        </div>
+      )}
 
       <div className="barra-ferramentas">
         <div className="navegacao-mes">

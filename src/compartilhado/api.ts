@@ -12,11 +12,18 @@ import type {
   Evento,
 } from "../core/eventos/tipos";
 import type { DadosJogador, Jogador, Posicao } from "../core/jogadores/tipos";
+import type { EstatisticasDaEquipe } from "../core/partidas/estatisticas";
+import type { DadosPartida, Partida } from "../core/partidas/tipos";
 import type { ConvocacaoEvento, EstadoPresenca } from "../core/presenca/tipos";
 import type { FiltrosEquipes } from "../database/equipes-repositorio";
 import type { FiltrosEventos } from "../database/eventos-repositorio";
 import type { FiltrosJogadores } from "../database/jogadores-repositorio";
 import type { EntradaHistorico } from "../database/historico-repositorio";
+import type {
+  EntradaHistoricoPartida,
+  PartidasDoEvento,
+  PendenciaDeResultado,
+} from "../database/partidas-repositorio";
 import type {
   ConflitoDePessoa,
   PedidoConflitosPessoas,
@@ -65,6 +72,13 @@ export const CANAIS = {
   presencaDefinirEstado: "presenca:definir-estado",
   presencaDaPessoa: "presenca:da-pessoa",
   presencaConflitosPessoas: "presenca:conflitos-pessoas",
+  partidasDoEvento: "partidas:do-evento",
+  partidasRegistrar: "partidas:registrar",
+  partidasCorrigir: "partidas:corrigir",
+  partidasApagar: "partidas:apagar",
+  partidasHistorico: "partidas:historico",
+  partidasEstatisticasEquipe: "partidas:estatisticas-equipe",
+  partidasPendencias: "partidas:pendencias",
 } as const;
 
 // Os "pedidos" que a tela pode fazer sobre membros de equipes.
@@ -153,6 +167,23 @@ export interface PedidoEstadoPresenca {
   estado: EstadoPresenca;
 }
 
+// Os "pedidos" sobre partidas. Tambem sem "responsavel" e sem "agora".
+export interface PedidoRegistrarPartida {
+  eventoId: number;
+  dados: DadosPartida;
+}
+
+export interface PedidoCorrigirPartida {
+  partidaId: number;
+  dados: DadosPartida;
+  motivo?: string;
+}
+
+export interface PedidoApagarPartida {
+  partidaId: number;
+  motivo: string;
+}
+
 // O que a tela enxerga em window.api: SO ISTO e nada mais
 export interface ApiLol {
   jogadores: {
@@ -209,5 +240,18 @@ export interface ApiLol {
     daPessoa(jogadorId: number): Promise<Resultado<PresencaDaPessoa>>;
     // Pessoas que seriam convocadas e ja estao em outro evento no mesmo horario
     conflitosPessoas(pedido: PedidoConflitosPessoas): Promise<Resultado<ConflitoDePessoa[]>>;
+  };
+  partidas: {
+    // Partidas do evento, em ordem, com avisos (nao bloqueiam)
+    doEvento(eventoId: number): Promise<Resultado<PartidasDoEvento>>;
+    // A 1a partida de um evento agendado o marca como realizado
+    registrar(pedido: PedidoRegistrarPartida): Promise<Resultado<Partida>>;
+    corrigir(pedido: PedidoCorrigirPartida): Promise<Resultado<Partida>>;
+    apagar(pedido: PedidoApagarPartida): Promise<Resultado<Partida>>;
+    historico(eventoId: number): Promise<Resultado<EntradaHistoricoPartida[]>>;
+    // Vitorias, derrotas e win rate CALCULADOS (interno separado de externo)
+    estatisticasDaEquipe(equipeId: number): Promise<Resultado<EstatisticasDaEquipe>>;
+    // Eventos que terminaram sem resultado registrado
+    pendencias(): Promise<Resultado<PendenciaDeResultado[]>>;
   };
 }

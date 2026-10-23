@@ -3,6 +3,7 @@ import { descreverQuando, formatarInicio, ICONE_TIPO, ROTULO_SITUACAO, rotuloDoE
 import { agoraLocal, situacaoDoEvento } from "../core/eventos/tempo";
 import {
   NOME_TIPO_EVENTO,
+  temAdversario,
   type CampoHistoricoEvento,
   type EntradaHistoricoEvento,
   type Evento,
@@ -10,6 +11,7 @@ import {
   type StatusEvento,
 } from "../core/eventos/tipos";
 import { formatarDataHora } from "./formatacao";
+import { PainelPartidas } from "./PainelPartidas";
 import { PainelPresenca } from "./PainelPresenca";
 
 interface Props {
@@ -319,6 +321,10 @@ export function DetalheEvento({ eventoId, versao, aoFechar, aoEditar, aoMudou }:
 
         {evento.status === "agendado" && !jaComecou && (
           <p className="dica">Só é possível marcar como realizado depois que o evento começar.</p>
+        )}
+
+        {!cancelado && temAdversario(evento.tipo) && (
+          <PainelPartidas evento={evento} versao={versao} aoMudou={aoMudou} />
         )}
 
         {!cancelado && <PainelPresenca evento={evento} versao={versao} />}

@@ -3,6 +3,7 @@ import { avaliarEquipe } from "../core/equipes/alertas";
 import type { Equipe, FuncaoEquipe, Membro } from "../core/equipes/tipos";
 import { POSICOES, type Posicao } from "../core/jogadores/tipos";
 import { AdicionarPessoa, type PreenchimentoInicial } from "./AdicionarPessoa";
+import { CartaoEstatisticas } from "./CartaoEstatisticas";
 import { FormularioEquipe } from "./FormularioEquipe";
 import { InativarEquipe } from "./InativarEquipe";
 import { RetirarMembro } from "./RetirarMembro";
@@ -160,6 +161,8 @@ export function PaginaEquipe({ equipeId, aoVoltar }: Props) {
           ))}
         </div>
       )}
+
+      <CartaoEstatisticas equipeId={equipe.id} />
 
       <div className="cartao">
         <h3>Escalação principal</h3>

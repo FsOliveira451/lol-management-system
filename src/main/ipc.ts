@@ -13,6 +13,7 @@ import {
 import { executar } from "../compartilhado/executar";
 import { agoraLocal } from "../core/eventos/tempo";
 import type { DadosEvento, TipoEvento } from "../core/eventos/tipos";
+import type { DadosPartida } from "../core/partidas/tipos";
 import type { EstadoPresenca } from "../core/presenca/tipos";
 import {
   buscarEventoPorId,
@@ -49,6 +50,15 @@ import {
   type FiltrosJogadores,
 } from "../database/jogadores-repositorio";
 import {
+  apagarPartida,
+  corrigirPartida,
+  estatisticasDaEquipe,
+  listarHistoricoDasPartidas,
+  listarPendenciasDeResultado,
+  obterPartidasDoEvento,
+  registrarPartida,
+} from "../database/partidas-repositorio";
+import {
   adicionarConvocado,
   convocarAutomaticamente,
   criarEventoComConvocacao,
@@ -58,6 +68,26 @@ import {
   removerConvocado,
   resumirPresencaDaPessoa,
 } from "../database/presenca-repositorio";
+
+// Le os dados de uma partida vindos da tela com desconfianca: so entra o que tem o tipo certo.
+// Campo ausente = "nao enviado" (undefined). null e um valor valido onde a regra permite.
+function lerDadosPartida(bruto: unknown): DadosPartida {
+  const d = lerObjeto(bruto);
+  const dados: DadosPartida = {};
+
+  if (typeof d.numero === "number") dados.numero = d.numero;
+
+  if (d.vencedorEquipeId === null) dados.vencedorEquipeId = null;
+  else if (typeof d.vencedorEquipeId === "number") dados.vencedorEquipeId = d.vencedorEquipeId;
+
+  if (d.duracaoMin === null) dados.duracaoMin = null;
+  else if (typeof d.duracaoMin === "number") dados.duracaoMin = d.duracaoMin;
+
+  if (d.observacoes === null) dados.observacoes = null;
+  else if (typeof d.observacoes === "string") dados.observacoes = d.observacoes;
+
+  return dados;
+}
 
 // Registra o que o "gerente" sabe responder.
 // REGRA DE OURO: tudo que chega da tela e NAO CONFIAVEL. Cada campo e lido com
@@ -212,6 +242,51 @@ export function registrarIpc(banco: Database.Database): void {
           : { ignorarEventoId: exigirId(p.ignorarEventoId) }),
       });
     }),
+  );
+
+  // ---------- partidas e resultados ----------
+  ipcMain.handle(CANAIS.partidasDoEvento, (_evento, eventoId: unknown) =>
+    executar(() => obterPartidasDoEvento(banco, exigirId(eventoId))),
+  );
+
+  // O "agora" e do PROGRAMA: ninguem registra resultado "do futuro"
+  ipcMain.handle(CANAIS.partidasRegistrar, (_evento, pedido: unknown) =>
+    executar(() => {
+      const p = lerObjeto(pedido);
+      return registrarPartida(banco, exigirId(p.eventoId), lerDadosPartida(p.dados), agoraLocal());
+    }),
+  );
+
+  ipcMain.handle(CANAIS.partidasCorrigir, (_evento, pedido: unknown) =>
+    executar(() => {
+      const p = lerObjeto(pedido);
+      return corrigirPartida(
+        banco,
+        exigirId(p.partidaId),
+        lerDadosPartida(p.dados),
+        agoraLocal(),
+        { motivo: lerTexto(p.motivo) },
+      );
+    }),
+  );
+
+  ipcMain.handle(CANAIS.partidasApagar, (_evento, pedido: unknown) =>
+    executar(() => {
+      const p = lerObjeto(pedido);
+      return apagarPartida(banco, exigirId(p.partidaId), { motivo: lerTexto(p.motivo) });
+    }),
+  );
+
+  ipcMain.handle(CANAIS.partidasHistorico, (_evento, eventoId: unknown) =>
+    executar(() => listarHistoricoDasPartidas(banco, exigirId(eventoId))),
+  );
+
+  ipcMain.handle(CANAIS.partidasEstatisticasEquipe, (_evento, equipeId: unknown) =>
+    executar(() => estatisticasDaEquipe(banco, exigirId(equipeId))),
+  );
+
+  ipcMain.handle(CANAIS.partidasPendencias, () =>
+    executar(() => listarPendenciasDeResultado(banco, agoraLocal())),
   );
 
   // ---------- equipes ----------

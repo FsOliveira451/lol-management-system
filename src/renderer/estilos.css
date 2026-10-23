@@ -1291,3 +1291,77 @@ h2 {
     grid-template-columns: 1fr;
   }
 }
+
+/* ---------- Partidas e resultados ---------- */
+
+.cabecalho-painel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.cabecalho-painel h3 {
+  margin: 0;
+}
+
+.alerta-clicavel {
+  display: block;
+  width: 100%;
+  text-align: left;
+  color: var(--texto);
+  font-family: inherit;
+  font-size: 14px;
+  cursor: pointer;
+  transition: filter 0.15s, box-shadow 0.15s;
+}
+
+.alerta-clicavel:hover {
+  filter: brightness(1.25);
+  box-shadow: var(--brilho-ciano);
+}
+
+.bloco-historico {
+  margin-top: 16px;
+}
+
+.forma-linha {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.forma {
+  display: flex;
+  gap: 6px;
+}
+
+.forma-item {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.forma-v {
+  background: rgba(52, 211, 153, 0.15);
+  border: 1px solid rgba(52, 211, 153, 0.6);
+  color: var(--verde);
+}
+
+.forma-d {
+  background: rgba(248, 113, 113, 0.12);
+  border: 1px solid rgba(248, 113, 113, 0.6);
+  color: var(--vermelho);
+}
+
+.interno-nota {
+  margin: 16px 0 0;
+}

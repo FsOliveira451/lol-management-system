@@ -48,6 +48,16 @@ const api: ApiLol = {
     daPessoa: (jogadorId) => ipcRenderer.invoke(CANAIS.presencaDaPessoa, jogadorId),
     conflitosPessoas: (pedido) => ipcRenderer.invoke(CANAIS.presencaConflitosPessoas, pedido),
   },
+  partidas: {
+    doEvento: (eventoId) => ipcRenderer.invoke(CANAIS.partidasDoEvento, eventoId),
+    registrar: (pedido) => ipcRenderer.invoke(CANAIS.partidasRegistrar, pedido),
+    corrigir: (pedido) => ipcRenderer.invoke(CANAIS.partidasCorrigir, pedido),
+    apagar: (pedido) => ipcRenderer.invoke(CANAIS.partidasApagar, pedido),
+    historico: (eventoId) => ipcRenderer.invoke(CANAIS.partidasHistorico, eventoId),
+    estatisticasDaEquipe: (equipeId) =>
+      ipcRenderer.invoke(CANAIS.partidasEstatisticasEquipe, equipeId),
+    pendencias: () => ipcRenderer.invoke(CANAIS.partidasPendencias),
+  },
 };
 
 // Expoe como "window.api" dentro da tela
