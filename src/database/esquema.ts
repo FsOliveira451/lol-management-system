@@ -197,7 +197,52 @@ export function criarTabelas(banco: Database.Database): void {
       responsavel TEXT,
       registrado_em TEXT NOT NULL DEFAULT (datetime('now'))
     );
-    CREATE INDEX IF NOT EXISTS idx_historico_partida_evento
+        CREATE INDEX IF NOT EXISTS idx_historico_partida_evento
       ON historico_partida (evento_id, id);
+
+    -- Quem jogou em cada partida (lado, posicao, campeao e KDA).
+    -- equipe_id e o "lado" da epoca: guarda a foto mesmo se a pessoa trocar de equipe depois.
+    CREATE TABLE IF NOT EXISTS desempenhos_partida (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      partida_id INTEGER NOT NULL REFERENCES partidas(id),
+      jogador_id INTEGER NOT NULL REFERENCES jogadores(id),
+      equipe_id INTEGER NOT NULL REFERENCES equipes(id),
+      posicao TEXT NOT NULL CHECK (posicao IN ('Top','Jungle','Mid','ADC','Support')),
+      campeao TEXT NOT NULL,
+      abates INTEGER CHECK (abates IS NULL OR abates BETWEEN 0 AND 99),
+      mortes INTEGER CHECK (mortes IS NULL OR mortes BETWEEN 0 AND 99),
+            assistencias INTEGER CHECK (assistencias IS NULL OR assistencias BETWEEN 0 AND 99),
+      criado_em TEXT NOT NULL DEFAULT (datetime('now')),
+      atualizado_em TEXT NOT NULL DEFAULT (datetime('now')),
+      -- Cinto de seguranca: os tres valores do KDA vem juntos ou nenhum
+      CHECK (
+        (abates IS NULL AND mortes IS NULL AND assistencias IS NULL)
+        OR (abates IS NOT NULL AND mortes IS NOT NULL AND assistencias IS NOT NULL)
+      )
+    );
+
+    CREATE UNIQUE INDEX IF NOT EXISTS ux_desempenho_pessoa
+      ON desempenhos_partida (partida_id, jogador_id);
+    CREATE UNIQUE INDEX IF NOT EXISTS ux_desempenho_posicao
+      ON desempenhos_partida (partida_id, equipe_id, posicao);
+    CREATE INDEX IF NOT EXISTS idx_desempenho_jogador
+      ON desempenhos_partida (jogador_id);
+
+    -- Historico: partida_id e desempenho_id SEM chave estrangeira de proposito,
+    -- para a trilha sobreviver a registros apagados.
+    CREATE TABLE IF NOT EXISTS historico_desempenho (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      evento_id INTEGER NOT NULL REFERENCES eventos(id),
+      partida_id INTEGER NOT NULL,
+      jogador_id INTEGER NOT NULL REFERENCES jogadores(id),
+      campo TEXT NOT NULL CHECK (campo IN ('posicao','campeao','kda','situacao')),
+      valor_anterior TEXT,
+      valor_novo TEXT,
+      motivo TEXT,
+      responsavel TEXT,
+      registrado_em TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_historico_desempenho_evento
+      ON historico_desempenho (evento_id, id);
   `);
 }

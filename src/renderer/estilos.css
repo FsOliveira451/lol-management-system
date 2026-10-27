@@ -1365,3 +1365,41 @@ h2 {
 .interno-nota {
   margin: 16px 0 0;
 }
+
+/* ---------- Desempenho individual ---------- */
+
+.sub-painel {
+  margin-top: 16px;
+  padding: 16px 18px;
+  background: rgba(34, 211, 238, 0.04);
+  border: 1px solid rgba(34, 211, 238, 0.35);
+  border-radius: 12px;
+}
+
+.sub-painel h4 {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ciano);
+}
+
+.grade-kda {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0 16px;
+}
+
+.valor-fixo {
+  padding: 10px 12px;
+  background: var(--fundo);
+  border: 1px solid var(--borda);
+  border-radius: 10px;
+  color: var(--texto);
+  font-family: "Segoe UI", system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: normal;
+  text-transform: none;
+}

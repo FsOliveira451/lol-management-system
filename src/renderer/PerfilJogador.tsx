@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { Jogador } from "../core/jogadores/tipos";
 import type { EntradaHistorico } from "../database/historico-repositorio";
 import { AlterarStatus } from "./AlterarStatus";
+import { CartaoDesempenho } from "./CartaoDesempenho";
 import { CartaoPresenca } from "./CartaoPresenca";
 import { FormularioJogador } from "./FormularioJogador";
 import {
@@ -125,7 +126,9 @@ export function PerfilJogador({ jogadorId, aoVoltar }: Props) {
 
       <CartaoPresenca jogadorId={jogador.id} />
 
-            <div className="cartao">
+      <CartaoDesempenho jogadorId={jogador.id} />
+
+      <div className="cartao">
         <h3>Histórico de mudanças</h3>
         {historico.length === 0 ? (
           <p className="em-construcao">Nenhum registro.</p>

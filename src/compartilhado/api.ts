@@ -6,6 +6,8 @@ import type {
   Participacao,
   ParticipacaoDaPessoa,
 } from "../core/equipes/tipos";
+import type { DesempenhoDaPessoa } from "../core/desempenho/estatisticas";
+import type { DadosDesempenho } from "../core/desempenho/tipos";
 import type {
   DadosEvento,
   EntradaHistoricoEvento,
@@ -15,6 +17,11 @@ import type { DadosJogador, Jogador, Posicao } from "../core/jogadores/tipos";
 import type { EstatisticasDaEquipe } from "../core/partidas/estatisticas";
 import type { DadosPartida, Partida } from "../core/partidas/tipos";
 import type { ConvocacaoEvento, EstadoPresenca } from "../core/presenca/tipos";
+import type {
+  DesempenhoDetalhado,
+  DesempenhosDaPartida,
+  EntradaHistoricoDesempenho,
+} from "../database/desempenho-repositorio";
 import type { FiltrosEquipes } from "../database/equipes-repositorio";
 import type { FiltrosEventos } from "../database/eventos-repositorio";
 import type { FiltrosJogadores } from "../database/jogadores-repositorio";
@@ -79,6 +86,12 @@ export const CANAIS = {
   partidasHistorico: "partidas:historico",
   partidasEstatisticasEquipe: "partidas:estatisticas-equipe",
   partidasPendencias: "partidas:pendencias",
+  desempenhoDaPartida: "desempenho:da-partida",
+  desempenhoRegistrar: "desempenho:registrar",
+  desempenhoCorrigir: "desempenho:corrigir",
+  desempenhoApagar: "desempenho:apagar",
+  desempenhoHistorico: "desempenho:historico",
+  desempenhoDaPessoa: "desempenho:da-pessoa",
 } as const;
 
 // Os "pedidos" que a tela pode fazer sobre membros de equipes.
@@ -184,6 +197,23 @@ export interface PedidoApagarPartida {
   motivo: string;
 }
 
+// Os "pedidos" sobre desempenho individual. Tambem sem "responsavel" e sem "agora".
+export interface PedidoRegistrarDesempenho {
+  partidaId: number;
+  dados: DadosDesempenho;
+}
+
+export interface PedidoCorrigirDesempenho {
+  desempenhoId: number;
+  dados: DadosDesempenho;
+  motivo?: string;
+}
+
+export interface PedidoApagarDesempenho {
+  desempenhoId: number;
+  motivo: string;
+}
+
 // O que a tela enxerga em window.api: SO ISTO e nada mais
 export interface ApiLol {
   jogadores: {
@@ -235,6 +265,7 @@ export interface ApiLol {
     convocarEquipes(eventoId: number): Promise<Resultado<ResultadoConvocacao>>;
     adicionar(pedido: PedidoConvocado): Promise<Resultado<ConvocacaoEvento>>;
     remover(pedido: PedidoConvocado): Promise<Resultado<ConvocacaoEvento>>;
+    // Quem tem desempenho registrado so pode ficar como presente ou atrasou
     definirEstado(pedido: PedidoEstadoPresenca): Promise<Resultado<ConvocacaoEvento>>;
     // Presenca calculada de uma pessoa (percentual, tendencia, alerta)
     daPessoa(jogadorId: number): Promise<Resultado<PresencaDaPessoa>>;
@@ -247,11 +278,22 @@ export interface ApiLol {
     // A 1a partida de um evento agendado o marca como realizado
     registrar(pedido: PedidoRegistrarPartida): Promise<Resultado<Partida>>;
     corrigir(pedido: PedidoCorrigirPartida): Promise<Resultado<Partida>>;
+    // Apaga tambem os desempenhos da partida
     apagar(pedido: PedidoApagarPartida): Promise<Resultado<Partida>>;
     historico(eventoId: number): Promise<Resultado<EntradaHistoricoPartida[]>>;
     // Vitorias, derrotas e win rate CALCULADOS (interno separado de externo)
     estatisticasDaEquipe(equipeId: number): Promise<Resultado<EstatisticasDaEquipe>>;
     // Eventos que terminaram sem resultado registrado
     pendencias(): Promise<Resultado<PendenciaDeResultado[]>>;
+  };
+  desempenho: {
+    // Quem jogou na partida, com avisos (menos de 5 por lado, mesmo campeao nos dois lados)
+    daPartida(partidaId: number): Promise<Resultado<DesempenhosDaPartida>>;
+    registrar(pedido: PedidoRegistrarDesempenho): Promise<Resultado<DesempenhoDetalhado>>;
+    corrigir(pedido: PedidoCorrigirDesempenho): Promise<Resultado<DesempenhoDetalhado>>;
+    apagar(pedido: PedidoApagarDesempenho): Promise<Resultado<DesempenhoDetalhado>>;
+    historico(eventoId: number): Promise<Resultado<EntradaHistoricoDesempenho[]>>;
+    // Win rate, KDA, campeoes e posicoes de uma pessoa, CALCULADOS
+    daPessoa(jogadorId: number): Promise<Resultado<DesempenhoDaPessoa>>;
   };
 }

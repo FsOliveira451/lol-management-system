@@ -409,6 +409,7 @@ export function corrigirPartida(
 
 // ---------- apagar ----------
 
+// Apaga a partida E os desempenhos dela (tudo ou nada). Cada desempenho deixa uma linha na trilha.
 export function apagarPartida(
   banco: Database.Database,
   partidaId: number,
@@ -419,10 +420,43 @@ export function apagarPartida(
     if (atual === null) {
       throw new ErroValidacao(["Partida não encontrada."]);
     }
-    if (textoOuNull(opcoes.motivo) === null) {
+    const motivo = textoOuNull(opcoes.motivo);
+    if (motivo === null) {
       throw new ErroValidacao(["Informe o motivo da exclusão da partida."]);
     }
     const evento = exigirEvento(banco, atual.eventoId);
+
+    // Os desempenhos dependem da partida: saem primeiro, deixando a trilha
+    const doDesempenho = banco
+      .prepare(
+        `SELECT d.jogador_id, d.posicao, d.campeao, j.apelido
+         FROM desempenhos_partida d
+         JOIN jogadores j ON j.id = d.jogador_id
+         WHERE d.partida_id = ?`,
+      )
+      .all(partidaId) as {
+      jogador_id: number;
+      posicao: string;
+      campeao: string;
+      apelido: string;
+    }[];
+
+    const guardar = banco.prepare(
+      `INSERT INTO historico_desempenho
+         (evento_id, partida_id, jogador_id, campo, valor_anterior, valor_novo, motivo, responsavel)
+       VALUES (?, ?, ?, 'situacao', ?, 'apagado', ?, ?)`,
+    );
+    for (const registro of doDesempenho) {
+      guardar.run(
+        atual.eventoId,
+        partidaId,
+        registro.jogador_id,
+        `${registro.apelido} (${registro.posicao}, ${registro.campeao})`,
+        `Partida ${atual.numero} apagada: ${motivo}`,
+        opcoes.responsavel ?? null,
+      );
+    }
+    banco.prepare("DELETE FROM desempenhos_partida WHERE partida_id = ?").run(partidaId);
 
     banco.prepare("DELETE FROM partidas WHERE id = ?").run(partidaId);
     registrarHistorico(

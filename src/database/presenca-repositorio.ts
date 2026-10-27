@@ -176,6 +176,23 @@ function inserirConvocacao(
     .run(eventoId, c.jogadorId, c.equipeId, c.funcao, c.papel);
 }
 
+// Quantos registros de desempenho a pessoa tem nas partidas deste evento
+function contarDesempenhosNoEvento(
+  banco: Database.Database,
+  eventoId: number,
+  jogadorId: number,
+): number {
+  const linha = banco
+    .prepare(
+      `SELECT COUNT(*) AS total
+       FROM desempenhos_partida d
+       JOIN partidas p ON p.id = d.partida_id
+       WHERE p.evento_id = ? AND d.jogador_id = ?`,
+    )
+    .get(eventoId, jogadorId) as { total: number };
+  return linha.total;
+}
+
 // ---------- consultar ----------
 
 export function listarConvocados(banco: Database.Database, eventoId: number): ConvocacaoEvento[] {
@@ -345,6 +362,17 @@ export function definirEstado(
 
   if (buscarConvocacao(banco, eventoId, jogadorId) === null) {
     throw new ErroValidacao(["Esta pessoa não está convocada para este evento."]);
+  }
+
+  // Quem tem desempenho registrado jogou: so pode continuar como presente ou atrasou
+  if (
+    estado !== "presente" &&
+    estado !== "atrasou" &&
+    contarDesempenhosNoEvento(banco, eventoId, jogadorId) > 0
+  ) {
+    throw new ErroValidacao([
+      "Esta pessoa tem desempenho registrado em partida deste evento. Apague ou corrija o desempenho antes de mudar a presença.",
+    ]);
   }
 
   banco

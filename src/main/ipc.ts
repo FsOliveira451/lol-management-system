@@ -1,6 +1,7 @@
 import { ipcMain } from "electron";
 import type Database from "better-sqlite3";
 import type { DadosEquipe, FuncaoEquipe } from "../core/equipes/tipos";
+import type { DadosDesempenho } from "../core/desempenho/tipos";
 import type { DadosJogador, Posicao } from "../core/jogadores/tipos";
 import { CANAIS } from "../compartilhado/api";
 import {
@@ -15,6 +16,14 @@ import { agoraLocal } from "../core/eventos/tempo";
 import type { DadosEvento, TipoEvento } from "../core/eventos/tipos";
 import type { DadosPartida } from "../core/partidas/tipos";
 import type { EstadoPresenca } from "../core/presenca/tipos";
+import {
+  apagarDesempenho,
+  corrigirDesempenho,
+  estatisticasDaPessoa,
+  listarHistoricoDeDesempenhos,
+  obterDesempenhosDaPartida,
+  registrarDesempenho,
+} from "../database/desempenho-repositorio";
 import {
   buscarEventoPorId,
   cancelarEvento,
@@ -69,8 +78,15 @@ import {
   resumirPresencaDaPessoa,
 } from "../database/presenca-repositorio";
 
+// Le um numero inteiro opcional vindo da tela: ausente = "nao enviado" (undefined);
+// null e um valor valido onde a regra permite.
+function lerNumeroOuNulo(valor: unknown): number | null | undefined {
+  if (valor === null) return null;
+  if (typeof valor === "number") return valor;
+  return undefined;
+}
+
 // Le os dados de uma partida vindos da tela com desconfianca: so entra o que tem o tipo certo.
-// Campo ausente = "nao enviado" (undefined). null e um valor valido onde a regra permite.
 function lerDadosPartida(bruto: unknown): DadosPartida {
   const d = lerObjeto(bruto);
   const dados: DadosPartida = {};
@@ -85,6 +101,29 @@ function lerDadosPartida(bruto: unknown): DadosPartida {
 
   if (d.observacoes === null) dados.observacoes = null;
   else if (typeof d.observacoes === "string") dados.observacoes = d.observacoes;
+
+  return dados;
+}
+
+// Idem para o desempenho de uma pessoa numa partida. A validacao de verdade esta no core.
+function lerDadosDesempenho(bruto: unknown): DadosDesempenho {
+  const d = lerObjeto(bruto);
+  const dados: DadosDesempenho = {};
+
+  if (typeof d.jogadorId === "number") dados.jogadorId = d.jogadorId;
+
+  const equipeId = lerNumeroOuNulo(d.equipeId);
+  if (equipeId !== undefined) dados.equipeId = equipeId;
+
+  if (typeof d.posicao === "string") dados.posicao = d.posicao as Posicao;
+  if (typeof d.campeao === "string") dados.campeao = d.campeao;
+
+  const abates = lerNumeroOuNulo(d.abates);
+  if (abates !== undefined) dados.abates = abates;
+  const mortes = lerNumeroOuNulo(d.mortes);
+  if (mortes !== undefined) dados.mortes = mortes;
+  const assistencias = lerNumeroOuNulo(d.assistencias);
+  if (assistencias !== undefined) dados.assistencias = assistencias;
 
   return dados;
 }
@@ -287,6 +326,45 @@ export function registrarIpc(banco: Database.Database): void {
 
   ipcMain.handle(CANAIS.partidasPendencias, () =>
     executar(() => listarPendenciasDeResultado(banco, agoraLocal())),
+  );
+
+  // ---------- desempenho individual ----------
+  ipcMain.handle(CANAIS.desempenhoDaPartida, (_evento, partidaId: unknown) =>
+    executar(() => obterDesempenhosDaPartida(banco, exigirId(partidaId))),
+  );
+
+  ipcMain.handle(CANAIS.desempenhoRegistrar, (_evento, pedido: unknown) =>
+    executar(() => {
+      const p = lerObjeto(pedido);
+      return registrarDesempenho(banco, exigirId(p.partidaId), lerDadosDesempenho(p.dados));
+    }),
+  );
+
+  ipcMain.handle(CANAIS.desempenhoCorrigir, (_evento, pedido: unknown) =>
+    executar(() => {
+      const p = lerObjeto(pedido);
+      return corrigirDesempenho(
+        banco,
+        exigirId(p.desempenhoId),
+        lerDadosDesempenho(p.dados),
+        { motivo: lerTexto(p.motivo) },
+      );
+    }),
+  );
+
+  ipcMain.handle(CANAIS.desempenhoApagar, (_evento, pedido: unknown) =>
+    executar(() => {
+      const p = lerObjeto(pedido);
+      return apagarDesempenho(banco, exigirId(p.desempenhoId), { motivo: lerTexto(p.motivo) });
+    }),
+  );
+
+  ipcMain.handle(CANAIS.desempenhoHistorico, (_evento, eventoId: unknown) =>
+    executar(() => listarHistoricoDeDesempenhos(banco, exigirId(eventoId))),
+  );
+
+  ipcMain.handle(CANAIS.desempenhoDaPessoa, (_evento, jogadorId: unknown) =>
+    executar(() => estatisticasDaPessoa(banco, exigirId(jogadorId))),
   );
 
   // ---------- equipes ----------

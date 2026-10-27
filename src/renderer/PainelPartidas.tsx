@@ -13,6 +13,7 @@ import type {
   EntradaHistoricoPartida,
 } from "../database/partidas-repositorio";
 import { ICONE_ALERTA, formatarDataHora } from "./formatacao";
+import { PainelDesempenho } from "./PainelDesempenho";
 
 interface Props {
   evento: Evento;
@@ -43,6 +44,9 @@ export function PainelPartidas({ evento, versao, aoMudou }: Props) {
   const [erros, setErros] = useState<string[]>([]);
   const [processando, setProcessando] = useState(false);
   const [mostrarHistorico, setMostrarHistorico] = useState(false);
+
+  // Partida cuja escalacao (quem jogou) esta aberta
+  const [abertaId, setAbertaId] = useState<number | null>(null);
 
   // Formulario de registrar/corrigir: partida null = registrar uma nova
   const [formAberto, setFormAberto] = useState<{ partida: Partida | null } | null>(null);
@@ -222,6 +226,8 @@ export function PainelPartidas({ evento, versao, aoMudou }: Props) {
   }
 
   const semResultado = partidas.length === 0;
+  // Se a partida aberta foi apagada, ela some da lista e o painel fecha sozinho
+  const partidaAberta = partidas.find((p) => p.id === abertaId) ?? null;
 
   return (
     <div className="cartao">
@@ -301,6 +307,12 @@ export function PainelPartidas({ evento, versao, aoMudou }: Props) {
                   <td className="celula-acoes">
                     <button
                       className="botao botao-pequeno"
+                      onClick={() => setAbertaId(abertaId === partida.id ? null : partida.id)}
+                    >
+                      {abertaId === partida.id ? "Fechar jogadores" : "Jogadores"}
+                    </button>{" "}
+                    <button
+                      className="botao botao-pequeno"
                       disabled={processando || formAberto !== null}
                       onClick={() => abrirCorrecao(partida)}
                     >
@@ -322,6 +334,16 @@ export function PainelPartidas({ evento, versao, aoMudou }: Props) {
               ))}
             </tbody>
           </table>
+
+          {partidaAberta !== null && (
+            <PainelDesempenho
+              key={partidaAberta.id}
+              evento={evento}
+              partida={partidaAberta}
+              versao={versao}
+              aoMudou={aoMudou}
+            />
+          )}
         </>
       )}
 
@@ -329,7 +351,8 @@ export function PainelPartidas({ evento, versao, aoMudou }: Props) {
         <div className="plano">
           <strong>Apagar a partida {apagando.numero}?</strong>
           <p className="dica sem-margem">
-            A partida some das estatísticas, mas a exclusão fica registrada no histórico.
+            A partida e os registros de quem jogou nela somem das estatísticas, mas a exclusão
+            fica registrada no histórico.
           </p>
           <label className="campo">
             Motivo (obrigatório)
